@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apostas - ESTV</title>
+    <link rel="icon" href="assets/logo-b.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Unbounded:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar">
+            <a href="index.html#home" class="sidebar-brand">
+                <img src="assets/logo-a.png" alt="ESTV" class="nav-logo">
+                <span class="sidebar-brand-title">ESTV</span>
+            </a>
+
+            <nav class="sidebar-nav">
+                <a href="index.html#home" class="nav-link"><i class="fas fa-house"></i> Início</a>
+                <a href="apostas.html" class="nav-link active"><i class="fas fa-futbol"></i> Apostas</a>
+                <a href="cartas.html" class="nav-link"><i class="fas fa-id-badge"></i> Cartas</a>
+                <a href="penaltis.html" class="nav-link"><i class="fas fa-bullseye"></i> Penáltis</a>
+                <a href="ranking.html" class="nav-link"><i class="fas fa-ranking-star"></i> Ranking</a>
+                <a href="index.html#social" class="nav-link"><i class="fas fa-heart"></i> Redes Sociais</a>
+                <div class="sidebar-divider"></div>
+                <a href="controlador.html" class="nav-link admin-only hidden"><i class="fas fa-sliders"></i> Painel de Controlo</a>
+            </nav>
+
+            <div class="sidebar-promo">
+                <div class="sidebar-promo-title">Segue a live</div>
+                <p class="sidebar-promo-text">Não percas nenhuma jornada — segue o canal na Twitch.</p>
+                <a href="https://www.twitch.tv/edu___silva" target="_blank" class="sidebar-promo-btn"><i class="fab fa-twitch"></i> Twitch</a>
+            </div>
+        </aside>
+
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+        <div class="app-main">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="topbar-toggle" id="sidebarToggle" aria-label="Abrir menu"><i class="fas fa-bars"></i></button>
+                    <a href="index.html#home" class="topbar-brand">
+                        <img src="assets/logo-a.png" alt="ESTV" class="nav-logo">
+                        <span class="sidebar-brand-title">ESTV</span>
+                    </a>
+                </div>
+                <div class="nav-auth" id="navAuth"></div>
+            </header>
+
+    <main>
+        <!-- Apostas Hero -->
+        <section class="games-hero">
+            <div class="container">
+                <div class="games-hero-content">
+                    <h1 class="games-hero-title">Apostas 1x2</h1>
+                    <p class="games-hero-subtitle">Palpita nos jogos de cada jornada. +10 pontos por jogo acertado — acerta todos e triplicas!</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="games-section">
+            <div class="container">
+                <div class="page-gate" data-gate>
+                <div class="gate-content">
+
+                    <!-- Aviso para o streamer, com link para o painel de controlo -->
+                    <a href="controlador.html" class="admin-only hidden admin-shortcut-banner">
+                        <i class="fas fa-sliders"></i>
+                        <span>És o streamer — gere as jornadas no Painel de Controlo</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+
+                    <!-- Jornadas abertas para apostar -->
+                    <div class="apostas-section">
+                        <h2 class="apostas-section-title"><i class="fas fa-futbol"></i> Jornadas Abertas</h2>
+                        <div id="jornadasAbertas" class="jornadas-list">
+                            <p class="ranking-loading">A carregar jornadas...</p>
+                        </div>
+                    </div>
+
+                    <!-- Histórico de jornadas resolvidas -->
+                    <div class="apostas-section">
+                        <h2 class="apostas-section-title"><i class="fas fa-clock-rotate-left"></i> Histórico</h2>
+                        <div id="jornadasHistorico" class="jornadas-list"></div>
+                    </div>
+
+                </div>
+                <div class="gate-overlay">
+                    <div class="gate-icon"><i class="fab fa-twitch"></i></div>
+                    <h3 class="gate-title">Apostas exclusivas para a comunidade</h3>
+                    <p class="gate-text">Entra com a tua conta Twitch para fazeres os teus palpites 1x2 nas jornadas do ESTV.</p>
+                    <button class="gate-login-btn"><i class="fab fa-twitch"></i> Entrar com Twitch</button>
+                </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <img src="assets/logo-b.png" alt="ESTV">
+                    <div>
+                        <div class="footer-brand-name">ESTV</div>
+                        <div class="footer-brand-tagline">Streamer de Futebol</div>
+                    </div>
+                </div>
+                <div class="footer-social">
+                    <a href="https://www.twitch.tv/edu___silva" target="_blank" aria-label="Twitch"><i class="fab fa-twitch"></i></a>
+                    <a href="https://www.instagram.com/edu_silva_3/" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.youtube.com/@edusilva_3" target="_blank" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-content">
+                <div class="footer-bottom">
+                    <p>© 2026 ESTV. Todos os direitos reservados. Pontos e apostas são fictícios, sem qualquer valor monetário.</p>
+                    <div class="footer-links">
+                        <a href="#">Termos de Uso</a>
+                        <a href="#">Privacidade</a>
+                        <a href="contacto.html">Contacto</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+        </div>
+    </div>
+
+    <script src="script.js?v=2"></script>
+    <script src="estv-config.js?v=1"></script>
+    <script src="estv-data.js?v=2"></script>
+    <script src="twitch-auth.js?v=2"></script>
+    <script src="apostas.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESTV - Futebol ao Vivo</title>
+    <link rel="icon" href="assets/logo-b.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Unbounded:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-shell">
+        <!-- Menu lateral -->
+        <aside class="sidebar" id="sidebar">
+            <a href="index.html#home" class="sidebar-brand">
+                <img src="assets/logo-a.png" alt="ESTV" class="nav-logo">
+                <span class="sidebar-brand-title">ESTV</span>
+            </a>
+
+            <nav class="sidebar-nav">
+                <a href="index.html#home" class="nav-link active"><i class="fas fa-house"></i> Início</a>
+                <a href="apostas.html" class="nav-link"><i class="fas fa-futbol"></i> Apostas</a>
+                <a href="cartas.html" class="nav-link"><i class="fas fa-id-badge"></i> Cartas</a>
+                <a href="penaltis.html" class="nav-link"><i class="fas fa-bullseye"></i> Penáltis</a>
+                <a href="ranking.html" class="nav-link"><i class="fas fa-ranking-star"></i> Ranking</a>
+                <a href="index.html#social" class="nav-link"><i class="fas fa-heart"></i> Redes Sociais</a>
+                <div class="sidebar-divider"></div>
+                <a href="controlador.html" class="nav-link admin-only hidden"><i class="fas fa-sliders"></i> Painel de Controlo</a>
+            </nav>
+
+            <div class="sidebar-promo">
+                <div class="sidebar-promo-title">Segue a live</div>
+                <p class="sidebar-promo-text">Não percas nenhuma jornada — segue o canal na Twitch.</p>
+                <a href="https://www.twitch.tv/edu___silva" target="_blank" class="sidebar-promo-btn"><i class="fab fa-twitch"></i> Twitch</a>
+            </div>
+        </aside>
+
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+        <div class="app-main">
+            <!-- Barra superior -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="topbar-toggle" id="sidebarToggle" aria-label="Abrir menu"><i class="fas fa-bars"></i></button>
+                    <a href="index.html#home" class="topbar-brand">
+                        <img src="assets/logo-a.png" alt="ESTV" class="nav-logo">
+                        <span class="sidebar-brand-title">ESTV</span>
+                    </a>
+                </div>
+                <div class="nav-auth" id="navAuth"></div>
+            </header>
+
+            <main>
+                <!-- Carrossel de destaques -->
+                <section id="home" class="hero">
+                    <div class="hero-bg"></div>
+                    <div class="container">
+                        <div class="hero-carousel" id="heroCarousel">
+                            <div class="carousel-track">
+                                <div class="carousel-slide carousel-slide-live active">
+                                    <div class="carousel-slide-content">
+                                        <span class="carousel-eyebrow"><span class="live-dot"></span> Ao vivo</span>
+                                        <h2 class="carousel-slide-title">Futebol ao vivo, pontos e previsões</h2>
+                                        <p class="carousel-slide-text">Assiste às lives de futebol do ESTV, ganha pontos de fidelidade e testa os teus conhecimentos nas previsões 1x2 de cada jornada.</p>
+                                        <a href="#stream" class="carousel-slide-cta"><i class="fab fa-twitch"></i> Ver a Live</a>
+                                    </div>
+                                </div>
+                                <div class="carousel-slide carousel-slide-cartas">
+                                    <div class="carousel-slide-content">
+                                        <span class="carousel-eyebrow"><i class="fas fa-id-badge"></i> Novo</span>
+                                        <h2 class="carousel-slide-title">Cartas Colecionáveis</h2>
+                                        <p class="carousel-slide-text">Usa os teus pontos para abrir cartas e coleciona 100 jogadores da Liga Portugal — pode calhar numa Lendária!</p>
+                                        <a href="cartas.html" class="carousel-slide-cta"><i class="fas fa-gift"></i> Abrir Cartas</a>
+                                    </div>
+                                </div>
+                                <div class="carousel-slide carousel-slide-penaltis">
+                                    <div class="carousel-slide-content">
+                                        <span class="carousel-eyebrow"><i class="fas fa-bullseye"></i> Novo</span>
+                                        <h2 class="carousel-slide-title">Jogo dos Penáltis</h2>
+                                        <p class="carousel-slide-text">Aposta entre 10 e 20 pontos, escolhe a camisola do jogador e tenta marcar o penálti. Acertaste? Ganhas o dobro!</p>
+                                        <a href="penaltis.html" class="carousel-slide-cta"><i class="fas fa-shoe-prints"></i> Jogar Agora</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="carousel-arrows">
+                                <button type="button" id="carouselPrev" aria-label="Destaque anterior"><i class="fas fa-chevron-left"></i></button>
+                                <button type="button" id="carouselNext" aria-label="Destaque seguinte"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                            <div class="carousel-dots" id="carouselDots"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Live Stream -->
+                <section id="stream" class="games-section">
+                    <div class="container">
+                        <div class="section-header">
+                            <span class="section-eyebrow"><i class="fab fa-twitch"></i> Em Direto</span>
+                            <h2 class="section-title">Stream Agora</h2>
+                        </div>
+
+                        <div class="hero-grid" style="grid-template-columns: 1fr; max-width: 900px; margin: 0 auto; justify-items: center;">
+                            <div class="stream-panel hero-gate" data-gate>
+                                <div class="gate-content">
+                                    <div class="live-badge" id="liveBadge">
+                                        <span class="live-dot"></span>
+                                        <span id="liveText">AO VIVO EM BREVE</span>
+                                    </div>
+                                    <div class="stream-placeholder" id="streamContainer">
+                                        <div id="twitch-embed-container"></div>
+                                        <!-- Offline Card Overlay -->
+                                        <div class="offline-card" id="offlineCard">
+                                            <img src="assets/logo-b.png" alt="ESTV Offline" class="offline-card-image">
+                                            <div class="offline-card-content">
+                                                <div class="offline-indicator">
+                                                    <div class="offline-dot"></div>
+                                                    <span>Stream Offline</span>
+                                                </div>
+                                                <p class="offline-text">
+                                                    A stream começa em breve. Segue-me na Twitch!
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="gate-overlay">
+                                    <div class="gate-icon"><i class="fab fa-twitch"></i></div>
+                                    <h3 class="gate-title">Vê a stream em direto</h3>
+                                    <p class="gate-text">Entra com a tua conta Twitch para desbloqueares o player e as estatísticas em tempo real.</p>
+                                    <button class="gate-login-btn"><i class="fab fa-twitch"></i> Entrar com Twitch</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Stats Ticker -->
+                        <div class="hero-ticker" data-gate>
+                            <div class="gate-content">
+                                <div class="ticker-grid">
+                                    <div class="ticker-item">
+                                        <i class="fas fa-users"></i>
+                                        <div>
+                                            <span class="ticker-value" id="followerCount">+--</span>
+                                            <span class="ticker-label">Followers</span>
+                                        </div>
+                                    </div>
+                                    <div class="ticker-divider"></div>
+                                    <div class="ticker-item">
+                                        <i class="fas fa-coins"></i>
+                                        <div>
+                                            <span class="ticker-value" id="totalPointsStat">--</span>
+                                            <span class="ticker-label">Pontos Distribuídos</span>
+                                        </div>
+                                    </div>
+                                    <div class="ticker-divider"></div>
+                                    <div class="ticker-item">
+                                        <i class="fas fa-futbol"></i>
+                                        <div>
+                                            <span class="ticker-value" id="jornadasStat">--</span>
+                                            <span class="ticker-label">Jornadas Realizadas</span>
+                                        </div>
+                                    </div>
+                                    <div class="ticker-divider"></div>
+                                    <div class="ticker-item">
+                                        <i class="fas fa-gamepad"></i>
+                                        <div>
+                                            <span class="ticker-value" data-target="600">+600</span>
+                                            <span class="ticker-label">Horas Ao Vivo</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gate-overlay">
+                                <button class="gate-login-btn"><i class="fab fa-twitch"></i> Entrar para veres as estatísticas</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Jogos em Destaque -->
+                <section id="jogos" class="offers">
+                    <div class="container">
+                        <div class="section-header">
+                            <span class="section-eyebrow"><i class="fas fa-gamepad"></i> Jogos</span>
+                            <h2 class="section-title">Jogos em Destaque</h2>
+                            <p class="section-description">Tudo fictício, só para diversão — usa os pontos que ganhas a ver as lives.</p>
+                        </div>
+
+                        <div class="offer-grid">
+                            <a href="apostas.html" class="offer-card">
+                                <span class="offer-card-badge hot">Popular</span>
+                                <div class="offer-card-icon"><i class="fas fa-futbol"></i></div>
+                                <h3 class="offer-card-title">Apostas 1x2</h3>
+                                <p class="offer-card-text">Palpita nos jogos de cada jornada. +10 pontos por acerto — acerta todos e triplicas.</p>
+                                <span class="offer-card-cta">Ver jornadas <i class="fas fa-arrow-right"></i></span>
+                            </a>
+                            <a href="cartas.html" class="offer-card">
+                                <span class="offer-card-badge novo">Novo</span>
+                                <div class="offer-card-icon"><i class="fas fa-id-badge"></i></div>
+                                <h3 class="offer-card-title">Cartas Colecionáveis</h3>
+                                <p class="offer-card-text">Abre cartas com os teus pontos e coleciona os 100 jogadores da Liga Portugal.</p>
+                                <span class="offer-card-cta">Abrir cartas <i class="fas fa-arrow-right"></i></span>
+                            </a>
+                            <a href="penaltis.html" class="offer-card">
+                                <span class="offer-card-badge novo">Novo</span>
+                                <div class="offer-card-icon"><i class="fas fa-bullseye"></i></div>
+                                <h3 class="offer-card-title">Jogo dos Penáltis</h3>
+                                <p class="offer-card-text">Aposta 10 a 20 pontos e tenta marcar. Acertaste, ganhas o dobro da aposta.</p>
+                                <span class="offer-card-cta">Jogar agora <i class="fas fa-arrow-right"></i></span>
+                            </a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Como Funciona Section -->
+                <section id="como-funciona" class="offers">
+                    <div class="container">
+                        <div class="section-header">
+                            <span class="section-eyebrow"><i class="fas fa-futbol"></i> Como Funciona</span>
+                            <h2 class="section-title">Pontos & Previsões</h2>
+                            <p class="section-description">
+                                Três passos simples para participares na comunidade ESTV — tudo fictício, só para diversão.
+                            </p>
+                        </div>
+
+                        <div class="how-grid">
+                            <div class="how-card">
+                                <div class="how-card-number">1</div>
+                                <div class="how-card-icon"><i class="fas fa-tv"></i></div>
+                                <h3 class="how-card-title">Assiste às Lives</h3>
+                                <p class="how-card-text">Entra com a tua conta Twitch e ganha pontos de fidelidade automaticamente enquanto vês as lives de futebol do ESTV.</p>
+                            </div>
+                            <div class="how-card">
+                                <div class="how-card-number">2</div>
+                                <div class="how-card-icon"><i class="fas fa-list-check"></i></div>
+                                <h3 class="how-card-title">Faz os Teus Palpites</h3>
+                                <p class="how-card-text">Em cada jornada, escolhe 1 (casa), X (empate) ou 2 (fora) para cada jogo que o ESTV colocar em apostas.pt — sem dinheiro real, só pontos.</p>
+                            </div>
+                            <div class="how-card">
+                                <div class="how-card-number">3</div>
+                                <div class="how-card-icon"><i class="fas fa-trophy"></i></div>
+                                <h3 class="how-card-title">Ganha Pontos e Sobe no Ranking</h3>
+                                <p class="how-card-text">+10 pontos por cada jogo acertado. Se acertares todos os jogos da jornada, o total dessa jornada é <strong>triplicado</strong>!</p>
+                            </div>
+                        </div>
+
+                        <div class="how-cta">
+                            <a href="apostas.html" class="cta-button-link"><i class="fas fa-futbol"></i> Ir para as Apostas</a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Últimos Vídeos -->
+                <section id="videos" class="offers">
+                    <div class="container">
+                        <div class="section-header">
+                            <span class="section-eyebrow"><i class="fab fa-youtube"></i> YouTube</span>
+                            <h2 class="section-title">Últimos Vídeos</h2>
+                            <p class="section-description">Os vídeos mais recentes do canal, direto do YouTube.</p>
+                        </div>
+
+                        <div class="videos-embed-wrap">
+                            <iframe src="https://www.youtube.com/embed/videoseries?list=UU0XwiKmPCLXgMWRV7sjB0vA" title="Últimos vídeos do ESTV" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+                        </div>
+
+                        <div class="how-cta">
+                            <a href="https://www.youtube.com/@edusilva_3" target="_blank" class="cta-button-link"><i class="fab fa-youtube"></i> Ver Canal no YouTube</a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Social Section -->
+                <section id="social" class="social">
+                    <div class="container">
+                        <div class="section-header">
+                            <span class="section-eyebrow"><i class="fas fa-heart"></i> Junta-te a Nós</span>
+                            <h2 class="section-title">Comunidade ESTV</h2>
+                            <p class="section-description">
+                                Segue-nos em todas as plataformas para não perderes nenhuma live ou jornada de apostas!
+                            </p>
+                        </div>
+
+                        <div class="social-gate" data-gate>
+                            <div class="gate-content">
+                                <div class="social-grid">
+                                    <a href="https://www.twitch.tv/edu___silva" target="_blank" class="social-card twitch">
+                                        <i class="fab fa-twitch"></i>
+                                        <span>Twitch</span>
+                                    </a>
+
+                                    <a href="https://www.instagram.com/edu_silva_3/" target="_blank" class="social-card instagram">
+                                        <i class="fab fa-instagram"></i>
+                                        <span>Instagram</span>
+                                    </a>
+
+                                    <a href="https://www.youtube.com/@edusilva_3" target="_blank" class="social-card youtube">
+                                        <i class="fab fa-youtube"></i>
+                                        <span>YouTube</span>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="gate-overlay">
+                                <div class="gate-icon"><i class="fab fa-twitch"></i></div>
+                                <h3 class="gate-title">Junta-te à comunidade</h3>
+                                <p class="gate-text">Entra com a tua conta Twitch para veres e acederes a todas as redes sociais.</p>
+                                <button class="gate-login-btn"><i class="fab fa-twitch"></i> Entrar com Twitch</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Footer -->
+                <footer class="footer">
+                    <div class="container">
+                        <div class="footer-top">
+                            <div class="footer-brand">
+                                <img src="assets/logo-b.png" alt="ESTV">
+                                <div>
+                                    <div class="footer-brand-name">ESTV</div>
+                                    <div class="footer-brand-tagline">Streamer de Futebol</div>
+                                </div>
+                            </div>
+                            <div class="footer-social">
+                                <a href="https://www.twitch.tv/edu___silva" target="_blank" aria-label="Twitch"><i class="fab fa-twitch"></i></a>
+                                <a href="https://www.instagram.com/edu_silva_3/" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                                <a href="https://www.youtube.com/@edusilva_3" target="_blank" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                            </div>
+                        </div>
+
+                        <div class="footer-content">
+                            <div class="footer-bottom">
+                                <p>© 2026 ESTV. Todos os direitos reservados. Pontos e apostas são fictícios, sem qualquer valor monetário.</p>
+                                <div class="footer-links">
+                                    <a href="#">Termos de Uso</a>
+                                    <a href="#">Privacidade</a>
+                                    <a href="contacto.html">Contacto</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js?v=2"></script>
+    <script src="estv-config.js?v=1"></script>
+    <script src="estv-data.js?v=2"></script>
+    <script src="twitch-auth.js?v=2"></script>
+</body>
+</html>

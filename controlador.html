@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controlo - ESTV</title>
+    <link rel="icon" href="assets/logo-b.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Unbounded:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar">
+            <a href="index.html#home" class="sidebar-brand">
+                <img src="assets/logo-a.png" alt="ESTV" class="nav-logo">
+                <span class="sidebar-brand-title">ESTV</span>
+            </a>
+
+            <nav class="sidebar-nav">
+                <a href="index.html#home" class="nav-link"><i class="fas fa-house"></i> Início</a>
+                <a href="apostas.html" class="nav-link"><i class="fas fa-futbol"></i> Apostas</a>
+                <a href="cartas.html" class="nav-link"><i class="fas fa-id-badge"></i> Cartas</a>
+                <a href="penaltis.html" class="nav-link"><i class="fas fa-bullseye"></i> Penáltis</a>
+                <a href="ranking.html" class="nav-link"><i class="fas fa-ranking-star"></i> Ranking</a>
+                <div class="sidebar-divider"></div>
+                <a href="controlador.html" class="nav-link admin-only hidden active"><i class="fas fa-sliders"></i> Painel de Controlo</a>
+            </nav>
+
+            <div class="sidebar-promo">
+                <div class="sidebar-promo-title">Segue a live</div>
+                <p class="sidebar-promo-text">Não percas nenhuma jornada — segue o canal na Twitch.</p>
+                <a href="https://www.twitch.tv/edu___silva" target="_blank" class="sidebar-promo-btn"><i class="fab fa-twitch"></i> Twitch</a>
+            </div>
+        </aside>
+
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+        <div class="app-main">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="topbar-toggle" id="sidebarToggle" aria-label="Abrir menu"><i class="fas fa-bars"></i></button>
+                    <a href="index.html#home" class="topbar-brand">
+                        <img src="assets/logo-a.png" alt="ESTV" class="nav-logo">
+                        <span class="sidebar-brand-title">ESTV</span>
+                    </a>
+                </div>
+                <div class="nav-auth" id="navAuth"></div>
+            </header>
+
+    <main>
+        <!-- Hero -->
+        <section class="games-hero">
+            <div class="container">
+                <div class="games-hero-content">
+                    <h1 class="games-hero-title"><i class="fas fa-sliders"></i> Painel de Controlo</h1>
+                    <p class="games-hero-subtitle">Abre e fecha apostas, insere resultados — os pontos são atribuídos automaticamente.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="games-section">
+            <div class="container">
+
+                <!-- Visível só quando NÃO estás logado como streamer -->
+                <div id="controladorBloqueado" class="admin-blocked">
+                    <div class="gate-icon"><i class="fas fa-lock"></i></div>
+                    <h3 class="gate-title">Acesso restrito</h3>
+                    <p class="gate-text">Este painel é só para o streamer. Entra com a tua conta Twitch (a mesma do canal ESTV) para gerires as jornadas.</p>
+                    <button class="gate-login-btn" id="controladorLoginBtn"><i class="fab fa-twitch"></i> Entrar com Twitch</button>
+                </div>
+
+                <!-- Painel real, só visível para o admin -->
+                <div id="controladorPainel" class="hidden">
+
+                    <!-- Jornada em destaque (a mais recente que ainda não foi resolvida) -->
+                    <div id="jornadaDestaque"></div>
+
+                    <div class="admin-panel">
+                        <div class="admin-panel-header">
+                            <h2><i class="fas fa-futbol"></i> Criar Nova Jornada</h2>
+                            <p>Adiciona os jogos desta jornada. Os viewers só veem jornadas depois de criadas aqui.</p>
+                        </div>
+
+                        <div class="admin-new-jornada">
+                            <div class="admin-field">
+                                <label for="novaJornadaTitulo">Título da jornada</label>
+                                <input type="text" id="novaJornadaTitulo" placeholder="Ex: Jornada 1 - Liga Portugal">
+                            </div>
+
+                            <div id="novaJornadaJogos" class="admin-jogos-list"></div>
+
+                            <button class="btn-secondary" id="addJogoBtn"><i class="fas fa-plus"></i> Adicionar Jogo</button>
+                            <button class="btn-primary" id="criarJornadaBtn"><i class="fas fa-futbol"></i> Criar Jornada</button>
+                        </div>
+                    </div>
+
+                    <div class="apostas-section">
+                        <h2 class="apostas-section-title"><i class="fas fa-list-check"></i> Todas as Jornadas</h2>
+                        <div class="admin-jornadas-list" id="adminJornadasList"></div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <img src="assets/logo-b.png" alt="ESTV">
+                    <div>
+                        <div class="footer-brand-name">ESTV</div>
+                        <div class="footer-brand-tagline">Streamer de Futebol</div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-content">
+                <div class="footer-bottom">
+                    <p>© 2026 ESTV. Painel de Controlo — uso interno do streamer.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+        </div>
+    </div>
+
+    <script src="script.js?v=2"></script>
+    <script src="estv-config.js?v=1"></script>
+    <script src="estv-data.js?v=2"></script>
+    <script src="twitch-auth.js?v=2"></script>
+    <script src="controlador.js?v=2"></script>
+</body>
+</html>

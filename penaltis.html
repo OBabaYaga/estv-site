@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penáltis - ESTV</title>
+    <link rel="icon" href="assets/logo-b.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Unbounded:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar">
+            <a href="index.html#home" class="sidebar-brand">
+                <img src="assets/logo-a.png" alt="ESTV" class="nav-logo">
+                <span class="sidebar-brand-title">ESTV</span>
+            </a>
+
+            <nav class="sidebar-nav">
+                <a href="index.html#home" class="nav-link"><i class="fas fa-house"></i> Início</a>
+                <a href="apostas.html" class="nav-link"><i class="fas fa-futbol"></i> Apostas</a>
+                <a href="cartas.html" class="nav-link"><i class="fas fa-id-badge"></i> Cartas</a>
+                <a href="penaltis.html" class="nav-link active"><i class="fas fa-bullseye"></i> Penáltis</a>
+                <a href="ranking.html" class="nav-link"><i class="fas fa-ranking-star"></i> Ranking</a>
+                <a href="index.html#social" class="nav-link"><i class="fas fa-heart"></i> Redes Sociais</a>
+                <div class="sidebar-divider"></div>
+                <a href="controlador.html" class="nav-link admin-only hidden"><i class="fas fa-sliders"></i> Painel de Controlo</a>
+            </nav>
+
+            <div class="sidebar-promo">
+                <div class="sidebar-promo-title">Segue a live</div>
+                <p class="sidebar-promo-text">Não percas nenhuma jornada — segue o canal na Twitch.</p>
+                <a href="https://www.twitch.tv/edu___silva" target="_blank" class="sidebar-promo-btn"><i class="fab fa-twitch"></i> Twitch</a>
+            </div>
+        </aside>
+
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+        <div class="app-main">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="topbar-toggle" id="sidebarToggle" aria-label="Abrir menu"><i class="fas fa-bars"></i></button>
+                    <a href="index.html#home" class="topbar-brand">
+                        <img src="assets/logo-a.png" alt="ESTV" class="nav-logo">
+                        <span class="sidebar-brand-title">ESTV</span>
+                    </a>
+                </div>
+                <div class="nav-auth" id="navAuth"></div>
+            </header>
+
+    <main>
+        <!-- Penaltis Hero -->
+        <section class="games-hero">
+            <div class="container">
+                <div class="games-hero-content">
+                    <h1 class="games-hero-title"><i class="fas fa-futbol"></i> Jogo dos Penáltis</h1>
+                    <p class="games-hero-subtitle">Aposta os teus pontos e bate o penálti. Acertaste? Ganhas o dobro da aposta. Falhaste? Perdes a aposta.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="games-section">
+            <div class="container">
+                <div class="page-gate" data-gate>
+                <div class="gate-content">
+
+                    <!-- Controlo de aposta -->
+                    <div class="pack-open-card penalti-bet-card">
+                        <div class="pack-open-info">
+                            <div class="pack-open-icon"><i class="fas fa-bullseye"></i></div>
+                            <div>
+                                <h2 class="pack-open-title">Faz a tua Aposta</h2>
+                                <p class="pack-open-text">Escolhe entre <strong id="apostaMinTexto">10</strong> e <strong id="apostaMaxTexto">20</strong> pontos e a camisola do jogador. Depois é só bater!</p>
+                            </div>
+                        </div>
+                        <div class="pack-open-action">
+                            <div class="pack-open-saldo">Tens <strong id="pontosAtuais">0</strong> pontos</div>
+                        </div>
+                    </div>
+
+                    <div class="penalti-controls">
+                        <div class="penalti-control-block">
+                            <span class="penalti-control-label">Aposta (pontos)</span>
+                            <div class="penalti-stepper">
+                                <button type="button" class="penalti-stepper-btn" id="apostaMenosBtn" aria-label="Diminuir aposta"><i class="fas fa-minus"></i></button>
+                                <span class="penalti-stepper-valor" id="apostaValor">10</span>
+                                <button type="button" class="penalti-stepper-btn" id="apostaMaisBtn" aria-label="Aumentar aposta"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="penalti-control-block">
+                            <span class="penalti-control-label">Camisola do jogador</span>
+                            <div class="jersey-picker" id="jerseyPicker">
+                                <button type="button" class="jersey-option jersey-azul active" data-cor="azul" aria-label="Camisola azul"><span class="jersey-swatch"></span> Azul</button>
+                                <button type="button" class="jersey-option jersey-verde" data-cor="verde" aria-label="Camisola verde"><span class="jersey-swatch"></span> Verde</button>
+                                <button type="button" class="jersey-option jersey-vermelho" data-cor="vermelho" aria-label="Camisola vermelha"><span class="jersey-swatch"></span> Vermelho</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="penalti-action-row">
+                        <button class="btn-primary penalti-kick-btn" id="baterBtn"><i class="fas fa-shoe-prints"></i> Bater Penálti</button>
+                        <span class="penalti-limite-texto" id="limiteTexto"></span>
+                    </div>
+
+                    <!-- Palco da animação -->
+                    <div class="penalti-stage" id="penaltiStage">
+                        <div class="penalti-sky"></div>
+                        <div class="penalti-goal">
+                            <div class="penalti-net"></div>
+                            <div class="penalti-keeper" id="penaltiKeeper"></div>
+                            <div class="penalti-ball" id="penaltiBall"></div>
+                        </div>
+                        <div class="penalti-pitch">
+                            <div class="penalti-player jersey-azul" id="penaltiPlayer"></div>
+                        </div>
+                        <div class="penalti-result hidden" id="penaltiResult">
+                            <span class="penalti-result-texto" id="penaltiResultTexto">GOLO!</span>
+                            <span class="penalti-result-pontos" id="penaltiResultPontos">+20 pontos</span>
+                        </div>
+                    </div>
+
+                    <!-- Histórico da sessão -->
+                    <div class="apostas-section">
+                        <h2 class="apostas-section-title"><i class="fas fa-list-ol"></i> Últimos Penáltis</h2>
+                        <div id="penaltiHistorico" class="penalti-historico">
+                            <p class="ranking-loading">Ainda não bateste nenhum penálti nesta sessão.</p>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="gate-overlay">
+                    <div class="gate-icon"><i class="fab fa-twitch"></i></div>
+                    <h3 class="gate-title">Penáltis exclusivos para a comunidade</h3>
+                    <p class="gate-text">Entra com a tua conta Twitch para apostares pontos e bateres o penálti.</p>
+                    <button class="gate-login-btn"><i class="fab fa-twitch"></i> Entrar com Twitch</button>
+                </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <img src="assets/logo-b.png" alt="ESTV">
+                    <div>
+                        <div class="footer-brand-name">ESTV</div>
+                        <div class="footer-brand-tagline">Streamer de Futebol</div>
+                    </div>
+                </div>
+                <div class="footer-social">
+                    <a href="https://www.twitch.tv/edu___silva" target="_blank" aria-label="Twitch"><i class="fab fa-twitch"></i></a>
+                    <a href="https://www.instagram.com/edu_silva_3/" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.youtube.com/@edusilva_3" target="_blank" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-content">
+                <div class="footer-bottom">
+                    <p>© 2026 ESTV. Todos os direitos reservados. Pontos, apostas e cartas são fictícios, sem qualquer valor monetário.</p>
+                    <div class="footer-links">
+                        <a href="#">Termos de Uso</a>
+                        <a href="#">Privacidade</a>
+                        <a href="contacto.html">Contacto</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+        </div>
+    </div>
+
+    <script src="script.js?v=2"></script>
+    <script src="estv-config.js?v=1"></script>
+    <script src="estv-data.js?v=2"></script>
+    <script src="twitch-auth.js?v=2"></script>
+    <script src="penaltis.js?v=2"></script>
+</body>
+</html>

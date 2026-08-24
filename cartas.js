@@ -23,7 +23,7 @@
 
   function buildCardFace(card, rarityCfg, quantidade) {
     const r = rarityCfg[card.raridade];
-    // Tenta a caricatura do jogador (assets/players/<id>.png); se ainda não
+    // Tenta a caricatura do jogador (assets/<id>.png); se ainda não
     // existir para este jogador, cai automaticamente para o ícone genérico.
     return `
       <div class="player-card player-card-${card.raridade}" style="--rarity-cor: ${r.cor}">
@@ -32,7 +32,7 @@
           <span class="player-card-pais">${card.pais}</span>
         </div>
         <div class="player-card-icon">
-          <img src="assets/players/${card.id}.png" alt="" class="player-card-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <img src="assets/${card.id}.png" alt="" class="player-card-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
           <span class="player-card-fallback">${cardIconHtml(card)}</span>
         </div>
         <div class="player-card-nome">${card.nome}</div>

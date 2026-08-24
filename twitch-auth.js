@@ -26,8 +26,8 @@
 
 const TwitchAuth = (function () {
   const CONFIG = {
-    CLIENT_ID: 'PREENCHER_DEPOIS_DE_CRIAR_A_APP_NA_TWITCH',
-    REDIRECT_URI: 'https://SUBSTITUIR-PELO-TEU-URL-DE-TESTE.netlify.app/', // <-- muda depois para 'https://estv.pt/' em produção
+    CLIENT_ID: '2mo7el92ye48x099v7fnj2vaif6ra0',
+    REDIRECT_URI: 'https://www.estv.pt/',
     SCOPE: '', // login apenas para identificação, sem permissões extra
     // Contas com acesso de admin (painel de controlo). Inclui a conta de
     // testes do Fabio (obaba_yaga) e a do streamer real (edu___silva) —

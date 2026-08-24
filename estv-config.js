@@ -17,6 +17,6 @@
 // ===================================================================
 
 const ESTV_CONFIG = {
-  API_BASE_URL: 'https://api.estv.pt', // <-- atualizar após o deploy no Vercel
-  REMOTE_POINTS: false, // <-- true quando o backend estiver pronto e configurado
+  API_BASE_URL: 'https://estv-api-delta.vercel.app',
+  REMOTE_POINTS: true,
 };

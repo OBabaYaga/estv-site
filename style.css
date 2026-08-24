@@ -3657,6 +3657,205 @@ h1, h2, h3,
   background: linear-gradient(120deg, rgba(16, 185, 129, 0.55), rgba(10, 10, 11, 0.35)), radial-gradient(circle at 82% 25%, rgba(16, 185, 129, 0.35), transparent 60%), var(--primary-dark);
 }
 
+/* ---------------------------------------------------------------
+   Elementos decorativos à direita de cada slide do carrossel
+   --------------------------------------------------------------- */
+
+.carousel-visual {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 22rem;
+  max-width: 46%;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* Boletim de apostas (slide "Ao vivo") — este widget tem botões reais,
+   por isso mantém pointer-events ativos para se poder clicar. */
+.carousel-visual-betslip {
+  pointer-events: auto;
+}
+
+.mini-betslip {
+  width: 15rem;
+  background: rgba(10, 10, 11, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.1rem;
+  padding: 1.1rem 1.1rem 1.25rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  transform: rotate(3deg);
+}
+
+.mini-betslip-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--blue-light);
+  margin-bottom: 0.6rem;
+}
+
+.mini-betslip-teams.jogo-teams {
+  font-size: 0.9rem;
+  margin-bottom: 0.9rem;
+}
+
+.mini-betslip-picks.jogo-picks {
+  margin-top: 0;
+  margin-bottom: 0.9rem;
+}
+
+.mini-betslip-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--gray-text);
+  font-weight: 600;
+}
+
+.mini-betslip-footer i {
+  color: var(--gold-accent);
+}
+
+/* Cartas coleciondáveis (slide "Cartas") — três mini-cartas em leque */
+.carousel-visual-cards {
+  perspective: 40rem;
+}
+
+.mini-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6.5rem;
+  height: 9rem;
+  border-radius: 1rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
+  border: 2px solid var(--rarity-cor, var(--border-color));
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.45), 0 0 26px color-mix(in srgb, var(--rarity-cor, transparent) 40%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  color: var(--rarity-cor, #fff);
+  font-size: 1.7rem;
+}
+
+.mini-card-rarity {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+.mini-card-back {
+  transform: translate(-50%, -50%) rotate(-16deg) translateX(-2.6rem);
+  opacity: 0.8;
+  z-index: 1;
+}
+
+.mini-card-front {
+  transform: translate(-50%, -50%) rotate(0deg) translateY(-0.4rem);
+  z-index: 3;
+}
+
+.mini-card-back2 {
+  transform: translate(-50%, -50%) rotate(16deg) translateX(2.6rem);
+  opacity: 0.8;
+  z-index: 2;
+}
+
+/* Cena de golo (slide "Penáltis") — baliza + guarda-redes + jogador,
+   reaproveitando o mesmo estilo visual do jogo real de Penáltis. */
+.carousel-visual-penalti {
+  overflow: visible;
+}
+
+.mini-goal {
+  position: absolute;
+  top: 14%;
+  right: 18%;
+  width: 11rem;
+  aspect-ratio: 16 / 7;
+  border: 0.3rem solid rgba(244, 244, 246, 0.9);
+  border-bottom: none;
+  border-radius: 0.3rem 0.3rem 0 0;
+}
+
+.mini-net {
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.18) 0, rgba(255, 255, 255, 0.18) 1px, transparent 1px, transparent 0.7rem),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0, rgba(255, 255, 255, 0.18) 1px, transparent 1px, transparent 0.7rem);
+  opacity: 0.65;
+}
+
+.mini-keeper {
+  position: absolute;
+  top: 19%;
+  right: 25%;
+  width: 4.2rem;
+  height: 4.2rem;
+  opacity: 0.92;
+}
+
+.mini-keeper svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.mini-striker {
+  position: absolute;
+  bottom: 6%;
+  right: 6%;
+  width: 6.5rem;
+  height: 9.5rem;
+}
+
+.mini-striker svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.45));
+}
+
+.mini-ball {
+  position: absolute;
+  top: 35%;
+  right: 32%;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #cfd3dc 70%);
+  box-shadow: 0 0.15rem 0.3rem rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 900px) {
+  .carousel-visual {
+    width: 16rem;
+    opacity: 0.55;
+  }
+}
+
+@media (max-width: 640px) {
+  .carousel-visual {
+    display: none;
+  }
+}
+
 .carousel-arrows button {
   position: absolute;
   top: 50%;

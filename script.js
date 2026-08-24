@@ -419,6 +419,21 @@ function initializeApp() {
   updateActiveNavLink();
   initHeroCarousel();
   updateSiteStatsTicker();
+  initMiniBetslip();
+}
+
+// Boletim de apostas decorativo no primeiro slide do carrossel — só
+// visual (não mexe em pontos nem em jornadas reais), mas responde ao
+// clique para dar sensação de interatividade antes de a pessoa entrar
+// na página de Apostas a sério.
+function initMiniBetslip() {
+  const picks = document.querySelectorAll('.mini-betslip-picks .pick-btn');
+  picks.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      picks.forEach((b) => b.classList.remove('pick-selected'));
+      btn.classList.add('pick-selected');
+    });
+  });
 }
 
 // Preenche os números de "Pontos Distribuídos" e "Jornadas" na hero

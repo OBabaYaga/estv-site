@@ -3356,9 +3356,9 @@ h1, h2, h3,
 }
 
 .sidebar-brand .nav-logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 0.5rem;
+  width: auto;
+  height: 60px;
+  border-radius: 0.6rem;
   flex-shrink: 0;
 }
 
@@ -3526,9 +3526,9 @@ h1, h2, h3,
 }
 
 .topbar-brand .nav-logo {
-  width: 30px;
-  height: 30px;
-  border-radius: 0.4rem;
+  width: auto;
+  height: 44px;
+  border-radius: 0.5rem;
   flex-shrink: 0;
 }
 

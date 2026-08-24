@@ -9,14 +9,27 @@
     return typeof TwitchAuth !== 'undefined' ? TwitchAuth.getUser() : null;
   }
 
+  // "25/08, 14:32" — usado para mostrar até quando é que uma jornada
+  // ainda aceita palpites (fecha sozinha 24h depois de ser criada).
+  function formatPrazo(timestampMs) {
+    if (!timestampMs) return '';
+    return new Date(timestampMs).toLocaleString('pt-PT', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
   // ---------------------------------------------------------------
   // Jornadas abertas (vista do viewer)
   // ---------------------------------------------------------------
-  function renderJornadasAbertas() {
+  async function renderJornadasAbertas() {
     const wrap = document.getElementById('jornadasAbertas');
     if (!wrap) return;
+    wrap.innerHTML = '<p class="ranking-loading">A carregar jornadas…</p>';
     const user = currentUser();
-    const jornadas = ESTVData.getJornadas().filter((j) => !j.resolvida);
+    const jornadas = (await ESTVData.getJornadas()).filter((j) => !j.resolvida);
 
     if (jornadas.length === 0) {
       wrap.innerHTML = '<p class="ranking-loading">Ainda não há nenhuma jornada aberta. Volta mais tarde!</p>';
@@ -25,7 +38,7 @@
 
     wrap.innerHTML = jornadas
       .map((j) => {
-        const picks = user ? ESTVData.getUserPicks(j.id, user.login) : {};
+        const picks = user ? ESTVData.getUserPicks(j, user.login) : {};
         const locked = j.fechada;
 
         const jogosHtml = j.jogos
@@ -55,6 +68,11 @@
               <h3>${j.titulo}</h3>
               ${locked ? '<span class="jornada-tag jornada-tag-fechada">Apostas Fechadas — aguarda resultados</span>' : '<span class="jornada-tag jornada-tag-aberta">Aberta para palpites</span>'}
             </div>
+            ${
+              !locked && j.fechaAutomaticamenteEm
+                ? `<div class="jornada-prazo"><i class="fas fa-clock"></i>As apostas fecham automaticamente às ${formatPrazo(j.fechaAutomaticamenteEm)} (24h após a criação da jornada)</div>`
+                : ''
+            }
             <div class="jogos-grid">${jogosHtml}</div>
           </div>
         `;
@@ -62,12 +80,18 @@
       .join('');
 
     wrap.querySelectorAll('.pick-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const u = currentUser();
         if (!u) return;
+        btn.disabled = true;
         const { jornada, jogo, escolha } = btn.dataset;
-        const ok = ESTVData.submitPick(jornada, u.login, jogo, escolha);
-        if (ok) renderJornadasAbertas();
+        const ok = await ESTVData.submitPick(jornada, u.login, jogo, escolha);
+        if (ok) {
+          renderJornadasAbertas();
+        } else {
+          btn.disabled = false;
+          alert('Não foi possível registar o palpite. Verifica a tua ligação e tenta novamente.');
+        }
       });
     });
   }
@@ -75,11 +99,12 @@
   // ---------------------------------------------------------------
   // Histórico de jornadas resolvidas
   // ---------------------------------------------------------------
-  function renderJornadasHistorico() {
+  async function renderJornadasHistorico() {
     const wrap = document.getElementById('jornadasHistorico');
     if (!wrap) return;
+    wrap.innerHTML = '<p class="ranking-loading">A carregar histórico…</p>';
     const user = currentUser();
-    const jornadas = ESTVData.getJornadas().filter((j) => j.resolvida);
+    const jornadas = (await ESTVData.getJornadas()).filter((j) => j.resolvida);
 
     if (jornadas.length === 0) {
       wrap.innerHTML = '<p class="ranking-loading">Ainda não há jornadas resolvidas.</p>';
@@ -129,11 +154,17 @@
     renderJornadasAbertas();
     renderJornadasHistorico();
   }
+  // (as duas correm em paralelo — cada uma trata do seu próprio "a
+  // carregar", não é preciso esperar por nenhuma delas aqui.)
 
   // Chamado pelo twitch-auth.js sempre que o estado de login muda
   window.onAuthChange = renderAll;
 
   document.addEventListener('DOMContentLoaded', () => {
     renderAll();
+    // Volta a desenhar de vez em quando para as jornadas passarem
+    // sozinhas de "Aberta" a "Apostas Fechadas" assim que baterem as 24h,
+    // mesmo que a pessoa deixe esta página aberta sem a recarregar.
+    setInterval(renderAll, 60 * 1000);
   });
 })();

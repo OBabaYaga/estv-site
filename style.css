@@ -1952,6 +1952,19 @@ h1, h2, h3,
   border: 1px solid rgba(47, 69, 194, 0.4);
 }
 
+.jornada-prazo {
+  width: 100%;
+  font-size: 0.78rem;
+  color: var(--gray-text);
+  margin-top: -0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.jornada-prazo i {
+  color: var(--gold-accent);
+  margin-right: 0.35rem;
+}
+
 .jogos-grid {
   display: grid;
   grid-template-columns: 1fr;

@@ -2,8 +2,9 @@
 // ESTV — Configuração de ligação ao backend real
 // ===================================================================
 //
-// Liga o site aos pontos "a sério", guardados no StreamElements através
-// da nossa API no Vercel, em vez de ficarem só no localStorage do browser.
+// Liga o site aos pontos "a sério" (StreamElements) e às Jornadas de
+// apostas partilhadas, guardados na nossa API no Vercel, em vez de
+// ficarem só no localStorage de cada browser.
 // ===================================================================
 
 const ESTV_CONFIG = {

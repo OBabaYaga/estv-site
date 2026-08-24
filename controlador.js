@@ -15,6 +15,18 @@
     return typeof TwitchAuth !== 'undefined' && TwitchAuth.isLoggedIn();
   }
 
+  // "25/08, 14:32" — usado para mostrar até quando é que uma jornada
+  // ainda aceita palpites (fecha sozinha 24h depois de ser criada).
+  function formatPrazo(timestampMs) {
+    if (!timestampMs) return '';
+    return new Date(timestampMs).toLocaleString('pt-PT', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
   // ---------------------------------------------------------------
   // Controlo de acesso à página
   // ---------------------------------------------------------------
@@ -63,7 +75,7 @@
     wrap.appendChild(row);
   }
 
-  function criarJornada() {
+  async function criarJornada() {
     const tituloInput = document.getElementById('novaJornadaTitulo');
     const titulo = tituloInput.value.trim();
     if (!titulo) {
@@ -87,14 +99,22 @@
       jogos.push({ casa, fora, data });
     }
 
-    ESTVData.createJornada(titulo, jogos);
+    const criarBtn = document.getElementById('criarJornadaBtn');
+    if (criarBtn) criarBtn.disabled = true;
+    try {
+      await ESTVData.createJornada(titulo, jogos);
 
-    tituloInput.value = '';
-    document.getElementById('novaJornadaJogos').innerHTML = '';
-    novoJogoCount = 0;
-    addJogoRow();
+      tituloInput.value = '';
+      document.getElementById('novaJornadaJogos').innerHTML = '';
+      novoJogoCount = 0;
+      addJogoRow();
 
-    renderAll();
+      renderAll();
+    } catch (e) {
+      alert('Não foi possível criar a jornada: ' + e.message);
+    } finally {
+      if (criarBtn) criarBtn.disabled = false;
+    }
   }
 
   // ---------------------------------------------------------------
@@ -102,11 +122,11 @@
   // com contagem de palpites por opção em cada jogo (visão rápida
   // para decidires enquanto estás em direto).
   // ---------------------------------------------------------------
-  function renderJornadaDestaque() {
+  async function renderJornadaDestaque() {
     const wrap = document.getElementById('jornadaDestaque');
     if (!wrap) return;
 
-    const jornadas = ESTVData.getJornadas().filter((j) => !j.resolvida);
+    const jornadas = (await ESTVData.getJornadas()).filter((j) => !j.resolvida);
     if (jornadas.length === 0) {
       wrap.innerHTML = '';
       return;
@@ -144,7 +164,9 @@
           <h2><i class="fas fa-bolt"></i> ${j.titulo}</h2>
           ${statusTag}
         </div>
-        <p class="destaque-meta">${numPalpites} pessoa(s) já apostaram nesta jornada</p>
+        <p class="destaque-meta">${numPalpites} pessoa(s) já apostaram nesta jornada${
+          !j.fechada && j.fechaAutomaticamenteEm ? ` · fecha sozinha às ${formatPrazo(j.fechaAutomaticamenteEm)}` : ''
+        }</p>
         <div class="destaque-jogos">${jogosHtml}</div>
         <div class="destaque-actions">
           ${!j.fechada ? `<button class="btn-primary destaque-fechar-btn" data-jornada="${j.id}"><i class="fas fa-lock"></i> Fechar Apostas Agora</button>` : '<span class="destaque-hint">Insere os resultados na lista abaixo e depois resolve a jornada.</span>'}
@@ -154,9 +176,15 @@
 
     const fecharBtn = wrap.querySelector('.destaque-fechar-btn');
     if (fecharBtn) {
-      fecharBtn.addEventListener('click', () => {
-        ESTVData.setFechada(fecharBtn.dataset.jornada, true);
-        renderAll();
+      fecharBtn.addEventListener('click', async () => {
+        fecharBtn.disabled = true;
+        try {
+          await ESTVData.setFechada(fecharBtn.dataset.jornada, true);
+          renderAll();
+        } catch (e) {
+          alert('Não foi possível fechar as apostas: ' + e.message);
+          fecharBtn.disabled = false;
+        }
       });
     }
   }
@@ -164,10 +192,10 @@
   // ---------------------------------------------------------------
   // Lista completa de jornadas (todas), com resultados + ações
   // ---------------------------------------------------------------
-  function renderJornadasList() {
+  async function renderJornadasList() {
     const list = document.getElementById('adminJornadasList');
     if (!list) return;
-    const jornadas = ESTVData.getJornadas();
+    const jornadas = await ESTVData.getJornadas();
 
     if (jornadas.length === 0) {
       list.innerHTML = '<p class="ranking-loading">Ainda não criaste nenhuma jornada.</p>';
@@ -203,7 +231,9 @@
           <div class="admin-jornada-card">
             <div class="admin-jornada-header">
               <h4>${j.titulo} ${statusTag}</h4>
-              <span class="admin-jornada-meta">${numPalpites} pessoa(s) apostaram</span>
+              <span class="admin-jornada-meta">${numPalpites} pessoa(s) apostaram${
+                !j.fechada && j.fechaAutomaticamenteEm ? ` · fecha sozinha às ${formatPrazo(j.fechaAutomaticamenteEm)}` : ''
+              }</span>
             </div>
             <div class="admin-jogo-resultados">${jogosHtml}</div>
             <div class="admin-jornada-actions">
@@ -217,39 +247,58 @@
       .join('');
 
     list.querySelectorAll('.admin-resultado-select').forEach((sel) => {
-      sel.addEventListener('change', () => {
+      sel.addEventListener('change', async () => {
         const { jornada, jogo } = sel.dataset;
-        if (sel.value) {
-          ESTVData.setResultado(jornada, jogo, sel.value);
+        if (!sel.value) return;
+        sel.disabled = true;
+        try {
+          await ESTVData.setResultado(jornada, jogo, sel.value);
+        } catch (e) {
+          alert('Não foi possível guardar o resultado: ' + e.message);
+        } finally {
+          sel.disabled = false;
         }
       });
     });
 
     list.querySelectorAll('.admin-fechar-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        ESTVData.setFechada(btn.dataset.jornada, true);
-        renderAll();
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try {
+          await ESTVData.setFechada(btn.dataset.jornada, true);
+          renderAll();
+        } catch (e) {
+          alert('Não foi possível fechar as apostas: ' + e.message);
+          btn.disabled = false;
+        }
       });
     });
 
     list.querySelectorAll('.admin-resolver-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
         try {
-          const resumo = ESTVData.resolveJornada(btn.dataset.jornada);
+          const resumo = await ESTVData.resolveJornada(btn.dataset.jornada);
           alert(`Jornada resolvida! Pontos atribuídos automaticamente a ${resumo.length} pessoa(s).`);
           renderAll();
           if (typeof TwitchAuth !== 'undefined') TwitchAuth.renderLeaderboard();
         } catch (e) {
           alert(e.message);
+          btn.disabled = false;
         }
       });
     });
 
     list.querySelectorAll('.admin-eliminar-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        if (confirm('Eliminar esta jornada? Esta ação não pode ser desfeita.')) {
-          ESTVData.deleteJornada(btn.dataset.jornada);
+      btn.addEventListener('click', async () => {
+        if (!confirm('Eliminar esta jornada? Esta ação não pode ser desfeita.')) return;
+        btn.disabled = true;
+        try {
+          await ESTVData.deleteJornada(btn.dataset.jornada);
           renderAll();
+        } catch (e) {
+          alert('Não foi possível eliminar a jornada: ' + e.message);
+          btn.disabled = false;
         }
       });
     });
@@ -280,5 +329,10 @@
     if (document.getElementById('novaJornadaJogos')) addJogoRow();
 
     renderAccessState();
+
+    // Volta a desenhar de vez em quando para uma jornada passar sozinha
+    // de "Aberta" a "Fechada" assim que baterem as 24h desde a criação,
+    // mesmo que o streamer deixe este painel aberto sem o recarregar.
+    setInterval(renderAll, 60 * 1000);
   });
 })();

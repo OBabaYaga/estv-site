@@ -328,55 +328,104 @@ const ESTVData = (function () {
   // ---------------------------------------------------------------
   // Jornadas / Apostas 1x2
   // ---------------------------------------------------------------
-  function getJornadas() {
-    return loadDB().jornadas.sort((a, b) => b.criadaEm - a.criadaEm);
+  // Tal como os pontos, isto usa a mesma bandeira REMOTE_POINTS: com
+  // ela desligada continua tudo a funcionar só no teu browser (bom para
+  // testar sozinho, "Modo de Teste"); com ela ligada (e API_BASE_URL
+  // configurado), as jornadas passam a ficar guardadas no backend
+  // partilhado (ver estv-api), e é isso que faz os palpites aparecerem
+  // e poderem ser feitos por QUALQUER pessoa que visite o site, não só
+  // por quem os criou.
+
+  // Ao fim deste tempo desde a criação, uma jornada fecha sozinha, mesmo
+  // que ninguém clique em "Fechar Apostas" — em modo remoto, o backend
+  // (estv-api) é que aplica esta regra a sério; isto aqui só replica a
+  // mesma regra para o "Modo de Teste" local, para os dois se
+  // comportarem da mesma forma.
+  const PRAZO_APOSTAS_MS = 24 * 60 * 60 * 1000; // 24 horas
+
+  function estaJornadaExpirada(jornada) {
+    return Date.now() >= jornada.criadaEm + PRAZO_APOSTAS_MS;
   }
 
-  function getJornada(id) {
-    return loadDB().jornadas.find((j) => j.id === id) || null;
+  function comPrazoLocal(jornada) {
+    return Object.assign({}, jornada, {
+      fechada: jornada.fechada || estaJornadaExpirada(jornada),
+      fechaAutomaticamenteEm: jornada.criadaEm + PRAZO_APOSTAS_MS,
+    });
   }
 
-  function createJornada(titulo, jogos) {
+  function authHeaders() {
+    const token = localStorage.getItem('estv_twitch_token');
+    return token ? { Authorization: 'Bearer ' + token } : {};
+  }
+
+  async function apiRequest(method, path, body) {
+    const res = await fetch(ESTV_CONFIG.API_BASE_URL + path, {
+      method: method,
+      headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (e) {
+      // resposta sem corpo JSON — segue com data = null
+    }
+    if (!res.ok) {
+      const err = new Error((data && data.error) || `O pedido falhou (${res.status}).`);
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  }
+
+  // --- Versões locais (localStorage) — usadas com REMOTE_POINTS=false ---
+
+  function getJornadasLocal() {
+    return loadDB()
+      .jornadas.sort((a, b) => b.criadaEm - a.criadaEm)
+      .map(comPrazoLocal);
+  }
+
+  function createJornadaLocal(titulo, jogos) {
     const db = loadDB();
     const jornada = {
       id: uid(),
       titulo: titulo,
       criadaEm: Date.now(),
-      fechada: false, // true = já não aceita novos palpites
-      resolvida: false, // true = resultados inseridos e pontos atribuídos
-      jogos: jogos.map((j) => ({
-        id: uid(),
-        casa: j.casa,
-        fora: j.fora,
-        data: j.data || '',
-        resultado: null, // '1' | 'X' | '2' | null
-      })),
-      palpites: {}, // { [login]: { [jogoId]: '1'|'X'|'2' } }
+      fechada: false,
+      resolvida: false,
+      jogos: jogos.map((j) => ({ id: uid(), casa: j.casa, fora: j.fora, data: j.data || '', resultado: null })),
+      palpites: {},
     };
     db.jornadas.push(jornada);
     saveDB(db);
-    return jornada;
+    return comPrazoLocal(jornada);
   }
 
-  function deleteJornada(id) {
+  function deleteJornadaLocal(id) {
     const db = loadDB();
     db.jornadas = db.jornadas.filter((j) => j.id !== id);
     saveDB(db);
   }
 
-  function setFechada(id, fechada) {
+  function setFechadaLocal(id, fechada) {
     const db = loadDB();
     const j = db.jornadas.find((x) => x.id === id);
     if (!j) return;
+    // Não deixa reabrir uma jornada cujas 24 horas já passaram.
+    if (!fechada && estaJornadaExpirada(j)) {
+      throw new Error('Já passaram 24 horas desde a criação desta jornada — não é possível reabrir as apostas.');
+    }
     j.fechada = !!fechada;
     saveDB(db);
   }
 
-  function submitPick(jornadaId, login, jogoId, escolha) {
+  function submitPickLocal(jornadaId, login, jogoId, escolha) {
     if (!login || !['1', 'X', '2'].includes(escolha)) return false;
     const db = loadDB();
     const j = db.jornadas.find((x) => x.id === jornadaId);
-    if (!j || j.fechada || j.resolvida) return false;
+    if (!j || j.fechada || j.resolvida || estaJornadaExpirada(j)) return false;
     login = login.toLowerCase();
     if (!j.palpites[login]) j.palpites[login] = {};
     j.palpites[login][jogoId] = escolha;
@@ -384,13 +433,7 @@ const ESTVData = (function () {
     return true;
   }
 
-  function getUserPicks(jornadaId, login) {
-    const j = getJornada(jornadaId);
-    if (!j || !login) return {};
-    return j.palpites[login.toLowerCase()] || {};
-  }
-
-  function setResultado(jornadaId, jogoId, resultado) {
+  function setResultadoLocal(jornadaId, jogoId, resultado) {
     if (!['1', 'X', '2'].includes(resultado)) return false;
     const db = loadDB();
     const j = db.jornadas.find((x) => x.id === jornadaId);
@@ -405,7 +448,7 @@ const ESTVData = (function () {
   // Calcula e atribui pontos a todos os utilizadores que palpitaram
   // nesta jornada: +10 por jogo acertado; se acertar TODOS os jogos da
   // jornada, o total dessa jornada é multiplicado por 3.
-  function resolveJornada(jornadaId) {
+  function resolveJornadaLocal(jornadaId) {
     const db = loadDB();
     const j = db.jornadas.find((x) => x.id === jornadaId);
     if (!j) return null;
@@ -438,6 +481,73 @@ const ESTVData = (function () {
     j.resumo = resumo;
     saveDB(db);
     return resumo;
+  }
+
+  // --- API pública — usa o backend partilhado quando o modo remoto
+  // está ligado, senão cai automaticamente para as versões locais ---
+
+  // Devolve sempre um array (nunca lança erro) — se o pedido remoto
+  // falhar, devolve [] em vez de rebentar a página toda.
+  async function getJornadas() {
+    if (!isRemoteEnabled()) return getJornadasLocal();
+    try {
+      const data = await apiRequest('GET', '/api/jornadas');
+      const jornadas = data && Array.isArray(data.jornadas) ? data.jornadas : [];
+      return jornadas.sort((a, b) => b.criadaEm - a.criadaEm);
+    } catch (e) {
+      console.error('[ESTVData] falha ao carregar jornadas remotas', e);
+      return [];
+    }
+  }
+
+  // Os palpites de alguém numa jornada — recebe a jornada JÁ CARREGADA
+  // (por exemplo, um item devolvido por getJornadas()), não faz nenhum
+  // pedido novo à rede.
+  function getUserPicks(jornada, login) {
+    if (!jornada || !login) return {};
+    return (jornada.palpites || {})[login.toLowerCase()] || {};
+  }
+
+  async function createJornada(titulo, jogos) {
+    if (!isRemoteEnabled()) return createJornadaLocal(titulo, jogos);
+    const data = await apiRequest('POST', '/api/jornadas', { titulo: titulo, jogos: jogos });
+    return data.jornada;
+  }
+
+  async function deleteJornada(id) {
+    if (!isRemoteEnabled()) return deleteJornadaLocal(id);
+    await apiRequest('DELETE', '/api/jornadas?id=' + encodeURIComponent(id));
+  }
+
+  async function setFechada(id, fechada) {
+    if (!isRemoteEnabled()) return setFechadaLocal(id, fechada);
+    await apiRequest('POST', '/api/jornadas/fechar', { id: id, fechada: fechada });
+  }
+
+  // Devolve true/false em vez de lançar erro — os botões de palpite
+  // usam isto para saber se devem voltar a desenhar-se com a escolha
+  // marcada, sem terem de lidar com try/catch.
+  async function submitPick(jornadaId, login, jogoId, escolha) {
+    if (!isRemoteEnabled()) return submitPickLocal(jornadaId, login, jogoId, escolha);
+    try {
+      await apiRequest('POST', '/api/jornadas/palpite', { jornadaId: jornadaId, jogoId: jogoId, escolha: escolha });
+      return true;
+    } catch (e) {
+      console.error('[ESTVData] falha ao registar palpite remoto', e);
+      return false;
+    }
+  }
+
+  async function setResultado(jornadaId, jogoId, resultado) {
+    if (!isRemoteEnabled()) return setResultadoLocal(jornadaId, jogoId, resultado);
+    await apiRequest('POST', '/api/jornadas/resultado', { jornadaId: jornadaId, jogoId: jogoId, resultado: resultado });
+    return true;
+  }
+
+  async function resolveJornada(jornadaId) {
+    if (!isRemoteEnabled()) return resolveJornadaLocal(jornadaId);
+    const data = await apiRequest('POST', '/api/jornadas/resolver', { jornadaId: jornadaId });
+    return data.resumo;
   }
 
   function isJogoLocked(jornada, login) {
@@ -616,7 +726,6 @@ const ESTVData = (function () {
     getTotalPointsDistributed,
     awardWatchPoints,
     getJornadas,
-    getJornada,
     createJornada,
     deleteJornada,
     setFechada,

@@ -446,11 +446,13 @@ function updateSiteStatsTicker() {
 
   const jornadasEl = document.getElementById('jornadasStat');
   if (jornadasEl) {
-    try {
-      jornadasEl.textContent = '+' + ESTVData.getJornadas().length;
-    } catch (e) {
-      console.error('Could not load jornadas count:', e);
-    }
+    ESTVData.getJornadas()
+      .then((jornadas) => {
+        jornadasEl.textContent = '+' + jornadas.length;
+      })
+      .catch((e) => {
+        console.error('Could not load jornadas count:', e);
+      });
   }
 
   const pointsEl = document.getElementById('totalPointsStat');

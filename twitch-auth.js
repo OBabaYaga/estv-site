@@ -1,27 +1,15 @@
 // ===================================================================
 // ESTV — Login com a Twitch (Implicit Grant Flow, sem servidor)
-//        + Modo de Teste (login simulado, sem precisar de app Twitch)
 // ===================================================================
 //
-// COMO CONFIGURAR O LOGIN REAL DA TWITCH (antes de publicar a sério):
-// 1. Vai a https://dev.twitch.tv/console/apps e cria uma aplicação.
-// 2. Em "OAuth Redirect URLs", adiciona exatamente o valor de REDIRECT_URI
-//    abaixo (tem de ser IDÊNTICO, incluindo a barra final "/").
-// 3. Copia o "Client ID" gerado e cola-o em CLIENT_ID abaixo.
-// 4. Quando isso estiver feito, muda DEV_MODE para false para esconder
-//    o botão de "Modo de Teste".
-//
-// MODO DE TESTE (DEV_MODE = true):
-// Como ainda não há app Twitch real registada, existe um botão extra
-// "Entrar em Modo de Teste" que simula um login com qualquer nome de
-// utilizador — útil para testar o site (incluindo o painel de admin,
-// entrando com o nome do streamer) sem depender da Twitch.
+// App Twitch registada em https://dev.twitch.tv/console/apps — o
+// CLIENT_ID e o REDIRECT_URI abaixo têm de corresponder exatamente ao
+// que está configurado lá (Redirect URL idêntico, incluindo a "/" final).
 //
 // PONTOS REAIS (StreamElements): ver estv-config.js. Quando
-// ESTV_CONFIG.REMOTE_POINTS estiver ligado, um login Twitch a sério
-// passa a ler/escrever o saldo verdadeiro no StreamElements Loyalty
-// (através da nossa pequena API) em vez do localStorage. O Modo de
-// Teste nunca mexe em pontos reais — continua sempre 100% local.
+// ESTV_CONFIG.REMOTE_POINTS estiver ligado, o login Twitch passa a
+// ler/escrever o saldo verdadeiro no StreamElements Loyalty (através da
+// nossa API no Vercel) em vez do localStorage.
 // ===================================================================
 
 const TwitchAuth = (function () {
@@ -29,13 +17,11 @@ const TwitchAuth = (function () {
     CLIENT_ID: '2mo7el92ye48x099v7fnj2vaif6ra0',
     REDIRECT_URI: 'https://www.estv.pt/',
     SCOPE: '', // login apenas para identificação, sem permissões extra
-    // Contas com acesso de admin (painel de controlo). Inclui a conta de
-    // testes do Fabio (obaba_yaga) e a do streamer real (edu___silva) —
-    // podes remover a de testes quando já não precisares dela.
+    // Contas com acesso de admin (painel de controlo).
     ADMIN_LOGINS: ['edu___silva', 'obaba_yaga'],
   };
 
-  const DEV_MODE = true; // <-- muda para false quando tiveres a app Twitch real configurada
+  const DEV_MODE = false;
 
   const TOKEN_KEY = 'estv_twitch_token';
   const LOGIN_KEY = 'estv_twitch_login';

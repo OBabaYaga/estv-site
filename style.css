@@ -32,7 +32,6 @@ body {
 
 h1, h2, h3,
 .hero-title, .section-title, .nav-title,
-.offer-name, .stat-value, .bonus-amount,
 .contact-title, .games-hero-title {
   font-family: var(--font-display);
 }
@@ -733,13 +732,6 @@ h1, h2, h3,
   box-shadow: 0 16px 36px rgba(47, 69, 194, 0.5);
 }
 
-/* Wide wordmark logo variant (nav/footer) */
-.nav-logo-wide {
-  width: auto;
-  height: 40px;
-  border-radius: 0;
-}
-
 /* Social */
 .social {
   padding: 6rem 0;
@@ -1013,15 +1005,6 @@ h1, h2, h3,
   .section-title {
     font-size: 2rem;
   }
-  
-  .offer-content {
-    padding: 1.5rem;
-  }
-  
-  .gambling-logos {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
 }
 
 /* Contact Page Styles */
@@ -1260,225 +1243,10 @@ h1, h2, h3,
   margin-bottom: 2rem;
 }
 
-.games-balance-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  background: rgba(24, 24, 27, 0.9);
-  border: 1px solid var(--border-color);
-  border-radius: 1rem;
-  padding: 1rem 1.5rem;
-  max-width: 480px;
-  margin: 0 auto;
-}
-
-.balance-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.balance-info i {
-  font-size: 1.5rem;
-  color: #fbbf24;
-}
-
-.balance-info div {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.balance-label {
-  font-size: 0.7rem;
-  color: var(--gray-text);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 700;
-}
-
-.balance-value {
-  font-size: 1.35rem;
-  font-weight: 900;
-  color: #fff;
-}
-
-.balance-reset {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border-color);
-  color: var(--gray-text);
-  padding: 0.6rem 1rem;
-  border-radius: 0.6rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.balance-reset:hover {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-}
-
 /* Games section */
 .games-section {
   padding: 3rem 0 6rem;
   background: var(--primary-dark);
-}
-
-.games-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 2.5rem;
-}
-
-.game-tab {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(24, 24, 27, 0.9);
-  border: 1px solid var(--border-color);
-  color: var(--gray-text);
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.75rem;
-  font-weight: 700;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.game-tab:hover {
-  color: #fff;
-  border-color: rgba(47, 69, 194, 0.4);
-}
-
-.game-tab.active {
-  background: linear-gradient(135deg, var(--blue-accent), var(--blue-light));
-  color: #fff;
-  border-color: transparent;
-}
-
-.game-panel {
-  display: none;
-  max-width: 640px;
-  margin: 0 auto;
-}
-
-.game-panel.active {
-  display: block;
-  animation: fadeIn 0.3s ease;
-}
-
-.game-card {
-  background: rgba(24, 24, 27, 0.9);
-  border: 1px solid var(--border-color);
-  border-radius: 1.5rem;
-  padding: 2rem;
-}
-
-.game-controls {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.bet-control {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.bet-control label {
-  font-size: 0.75rem;
-  color: var(--gray-text);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.bet-input-group {
-  display: flex;
-  align-items: stretch;
-  border: 1px solid var(--border-color);
-  border-radius: 0.6rem;
-  overflow: hidden;
-}
-
-.bet-input-group input {
-  flex: 1;
-  background: rgba(0, 0, 0, 0.3);
-  border: none;
-  color: #fff;
-  font-weight: 800;
-  font-size: 1.05rem;
-  text-align: center;
-  padding: 0.7rem 0.5rem;
-}
-
-.bet-input-group input:focus {
-  outline: none;
-}
-
-.bet-step {
-  background: rgba(255, 255, 255, 0.06);
-  border: none;
-  color: #fff;
-  width: 2.75rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.bet-step:hover {
-  background: rgba(47, 69, 194, 0.3);
-}
-
-.dice-config-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-}
-
-.dice-static-value {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border-color);
-  border-radius: 0.6rem;
-  padding: 0.7rem 0.5rem;
-  text-align: center;
-  font-weight: 800;
-  color: var(--blue-light);
-  font-size: 0.95rem;
-}
-
-#minesCount {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border-color);
-  border-radius: 0.6rem;
-  padding: 0.7rem 0.5rem;
-  color: #fff;
-  font-weight: 800;
-  text-align: center;
-  cursor: pointer;
-}
-
-.game-actions {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.game-actions.hidden {
-  display: none;
 }
 
 .btn-primary {
@@ -1517,24 +1285,6 @@ h1, h2, h3,
 
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.15);
-}
-
-.games-disclaimer {
-  max-width: 640px;
-  margin: 2.5rem auto 0;
-  text-align: center;
-  font-size: 0.8rem;
-  color: var(--gray-text);
-  line-height: 1.6;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  justify-content: center;
-}
-
-.games-disclaimer i {
-  color: var(--orange-accent);
-  margin-top: 0.2rem;
 }
 
 /* ===================================================================
@@ -1867,7 +1617,8 @@ h1, h2, h3,
   border: 1px solid rgba(145, 70, 255, 0.3);
   border-radius: 1.25rem;
   padding: 1.5rem 1.75rem;
-  margin-top: 2rem;
+  margin-top: 0;
+  margin-bottom: 2rem;
   flex-wrap: wrap;
 }
 
@@ -1966,11 +1717,6 @@ h1, h2, h3,
 /* ===================================================================
    RANKING PAGE — leaderboard da StreamElements
    =================================================================== */
-
-.player-stats-card {
-  margin-top: 0;
-  margin-bottom: 2rem;
-}
 
 .ranking-card {
   background: rgba(24, 24, 27, 0.9);
@@ -2116,86 +1862,6 @@ h1, h2, h3,
   border-radius: 0.6rem;
   font-weight: 700;
   font-size: 0.85rem;
-}
-
-/* ===================================================================
-   LOJA — embed StreamElements Store
-   =================================================================== */
-
-.store-frame-wrapper {
-  position: relative;
-  width: 100%;
-  min-height: 720px;
-  border-radius: 1.25rem;
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-  background: rgba(24, 24, 27, 0.9);
-}
-
-.store-frame {
-  width: 100%;
-  height: 720px;
-  border: none;
-  display: block;
-  background: #0e0e10;
-}
-
-.store-loading {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  color: var(--gray-text);
-  font-weight: 700;
-  background: rgba(24, 24, 27, 0.9);
-  z-index: 1;
-}
-
-.store-loading i {
-  font-size: 1.75rem;
-  color: var(--blue-light);
-}
-
-.store-fallback {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 1rem;
-  padding: 3rem 1.5rem;
-  background: rgba(24, 24, 27, 0.9);
-  border: 1px solid var(--border-color);
-  border-radius: 1.25rem;
-}
-
-.store-fallback.visible {
-  display: flex;
-}
-
-.store-note {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 1.5rem;
-  font-size: 0.8rem;
-  color: var(--gray-text);
-  text-align: center;
-}
-
-.store-note i {
-  color: var(--green-accent);
-}
-
-@media (max-width: 640px) {
-  .store-frame-wrapper,
-  .store-frame {
-    min-height: 560px;
-    height: 560px;
-  }
 }
 
 /* ===================================================================

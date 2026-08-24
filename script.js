@@ -1,4 +1,3 @@
-console.log('ESTV script.js carregado!');
 
 // Cache DOM elements
 const sidebarToggle = document.getElementById('sidebarToggle');
@@ -86,7 +85,7 @@ const observer = new IntersectionObserver(function(entries) {
 }, observerOptions);
 
 // Observe elements for animations
-document.querySelectorAll('.stat-card, .offer-card').forEach(el => {
+document.querySelectorAll('.offer-card').forEach(el => {
   el.style.opacity = '0';
   observer.observe(el);
 });
@@ -145,15 +144,14 @@ function fetchFollowerCount() {
       if (!isNaN(followerCount)) {
         // Animate the counter
         animateCounter(followerElement, followerCount, 2000);
-        console.log('Follower count fetched:', followerCount);
       } else {
         // Fallback if API returns non-number
         followerElement.textContent = '1K+';
-        console.log('Could not parse follower count:', count);
+        console.warn('Could not parse follower count:', count);
       }
     })
     .catch(err => {
-      console.log('Error fetching follower count:', err);
+      console.error('Error fetching follower count:', err);
       followerElement.textContent = '1K+';
     });
 }
@@ -208,7 +206,7 @@ function updateActiveNavLink() {
     if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
       navLinks.forEach(link => link.classList.remove('active'));
       
-      const currentLink = document.querySelector(`.nav-link[href="#${section.id}"]`);
+      const currentLink = document.querySelector(`.nav-link[href$="#${section.id}"]`);
       if (currentLink) {
         currentLink.classList.add('active');
       }
@@ -221,7 +219,6 @@ window.addEventListener('scroll', updateActiveNavLink);
 
 // Check if stream is live FIRST, then decide whether to load embed
 function checkStreamStatus() {
-  console.log('Verificando status da stream...');
   checkTwitchStreamStatus();
 }
 
@@ -241,7 +238,6 @@ function loadTwitchEmbed() {
 
   try {
     if (!window.Twitch || !window.Twitch.Embed) {
-      console.log('Twitch Embed not available, using iframe fallback');
       loadTwitchIframe();
       return;
     }
@@ -253,7 +249,6 @@ function loadTwitchEmbed() {
       parent: [parent]
     });
 
-    console.log('Twitch embed criado com sucesso');
   } catch (e) {
     console.error('Erro no embed, usando iframe:', e);
     loadTwitchIframe();
@@ -266,7 +261,6 @@ function loadTwitchIframe() {
   const container = document.getElementById('twitch-embed-container');
   if (!container) return;
 
-  console.log('Loading Twitch player for edu___silva');
 
   // Clear any offline card first
   const offlineCard = document.getElementById('offlineCard');
@@ -276,16 +270,18 @@ function loadTwitchIframe() {
   }
 
   // Simple iframe - Twitch player
+  // "parent" tem de incluir o domínio real a partir do qual a página está
+  // a ser servida, senão a Twitch recusa o embed.
+  const parent = window.location.hostname || 'www.estv.pt';
   container.innerHTML = `
     <iframe
-      src="https://player.twitch.tv/?channel=edu___silva&parent=localhost&parent=estv.pt&parent=127.0.0.1"
+      src="https://player.twitch.tv/?channel=edu___silva&parent=${parent}&parent=www.estv.pt&parent=estv.pt"
       height="100%"
       width="100%"
       frameborder="0"
       allowfullscreen="true">
     </iframe>
   `;
-  console.log('Twitch player loaded');
 }
 
 
@@ -297,7 +293,6 @@ function checkTwitchStreamStatus() {
     .then(response => response.text())
     .then(status => {
       const statusText = status.trim();
-      console.log('Stream uptime from DecAPI:', statusText);
       
       // DecAPI returns "-1" or error message if offline, or uptime in seconds if online
       const isOffline = statusText === '-1' || 
@@ -305,16 +300,13 @@ function checkTwitchStreamStatus() {
                         statusText.toLowerCase().includes('error') ||
                         statusText === '';
       
-      console.log('Is offline (uptime check):', isOffline);
       
       // Only update if state changed
       const newState = isOffline ? 'offline' : 'online';
       if (currentStreamState !== newState) {
         currentStreamState = newState;
-        console.log('Stream state changed to:', newState);
         
         if (isOffline) {
-          console.log('Stream is OFFLINE - showing offline card only');
           // Clear the embed container when offline
           const container = document.getElementById('twitch-embed-container');
           if (container) {
@@ -322,7 +314,6 @@ function checkTwitchStreamStatus() {
           }
           showOfflineCard();
         } else {
-          console.log('Stream is LIVE! Loading Twitch player...');
           // Load player when stream is confirmed live
           loadTwitchIframe();
           showStream();
@@ -330,7 +321,7 @@ function checkTwitchStreamStatus() {
       }
     })
     .catch(err => {
-      console.log('Could not check stream status:', err);
+      console.error('Could not check stream status:', err);
       // On error, keep showing offline card (safer default)
       if (currentStreamState !== 'offline') {
         currentStreamState = 'offline';
@@ -350,11 +341,10 @@ function loadTwitchScript() {
     const script = document.createElement('script');
     script.src = 'https://embed.twitch.tv/embed.js';
     script.onload = () => {
-      console.log('Twitch script loaded');
       resolve();
     };
     script.onerror = () => {
-      console.log('Failed to load Twitch script');
+      console.error('Failed to load Twitch script');
       reject();
     };
     document.head.appendChild(script);
@@ -380,7 +370,6 @@ function showOfflineCard() {
     liveText.textContent = 'OFFLINE';
   }
   
-  console.log('Showing offline card');
 }
 
 // Hide offline card and show stream
@@ -402,7 +391,6 @@ function showStream() {
     liveText.textContent = 'AO VIVO';
   }
   
-  console.log('Showing live stream');
 }
 
 // Initialize on page load
@@ -413,7 +401,6 @@ if (document.readyState === 'loading') {
 }
 
 function initializeApp() {
-  console.log('App inicializando...');
   
   // Show offline card initially
   showOfflineCard();
@@ -424,14 +411,41 @@ function initializeApp() {
   // Check stream status immediately (don't wait for Twitch API)
   checkStreamStatus();
   
-  // Re-check stream status every 1 second
+  // Re-check stream status periodically
   setInterval(function() {
-    console.log('Atualizando status da stream...');
     checkStreamStatus();
-  }, 1000);
+  }, 20000);
   
   updateActiveNavLink();
   initHeroCarousel();
+  updateSiteStatsTicker();
+}
+
+// Preenche os números de "Pontos Distribuídos" e "Jornadas" na hero
+// ticker da página inicial (ficavam presos em "--" porque nada os
+// atualizava). O total de pontos é o total guardado localmente — se
+// ESTV_CONFIG.REMOTE_POINTS estiver ligado, os saldos "a sério" vivem no
+// StreamElements e este número deixa de refletir o total real distribuído.
+function updateSiteStatsTicker() {
+  if (typeof ESTVData === 'undefined') return;
+
+  const jornadasEl = document.getElementById('jornadasStat');
+  if (jornadasEl) {
+    try {
+      jornadasEl.textContent = '+' + ESTVData.getJornadas().length;
+    } catch (e) {
+      console.error('Could not load jornadas count:', e);
+    }
+  }
+
+  const pointsEl = document.getElementById('totalPointsStat');
+  if (pointsEl) {
+    try {
+      pointsEl.textContent = '+' + formatNumber(ESTVData.getTotalPointsDistributed());
+    } catch (e) {
+      console.error('Could not load total points:', e);
+    }
+  }
 }
 
 // ---------------------------------------------------------------

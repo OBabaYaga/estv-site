@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apostas - ESTV</title>
+    <title>Mini-Jogo - ESTV</title>
     <link rel="icon" href="assets/logo-b.png">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,10 +20,10 @@
 
             <nav class="sidebar-nav">
                 <a href="index.html#home" class="nav-link"><i class="fas fa-house"></i> Início</a>
-                <a href="apostas.html" class="nav-link active"><i class="fas fa-futbol"></i> Apostas</a>
+                <a href="apostas.html" class="nav-link"><i class="fas fa-futbol"></i> Apostas</a>
                 <a href="cartas.html" class="nav-link"><i class="fas fa-id-badge"></i> Cartas</a>
                 <a href="penaltis.html" class="nav-link"><i class="fas fa-bullseye"></i> Penáltis</a>
-                <a href="minijogo.html" class="nav-link"><i class="fas fa-gamepad"></i> Mini-Jogo</a>
+                <a href="minijogo.html" class="nav-link active"><i class="fas fa-gamepad"></i> Mini-Jogo</a>
                 <a href="ranking.html" class="nav-link"><i class="fas fa-ranking-star"></i> Ranking</a>
                 <a href="index.html#social" class="nav-link"><i class="fas fa-heart"></i> Redes Sociais</a>
                 <div class="sidebar-divider"></div>
@@ -51,49 +51,29 @@
             </header>
 
     <main>
-        <!-- Apostas Hero -->
+        <!-- Mini-Jogo Hero -->
         <section class="games-hero">
             <div class="container">
                 <div class="games-hero-content">
-                    <h1 class="games-hero-title">Apostas 1x2</h1>
-                    <p class="games-hero-subtitle">Palpita nos jogos de cada jornada. +10 pontos por jogo acertado — acerta todos e triplicas!</p>
+                    <h1 class="games-hero-title"><i class="fas fa-gamepad"></i> Futebol Cabeçudo</h1>
+                    <p class="games-hero-subtitle">Só para diversão — sem pontos, sem apostas. Joga sozinho ou com um amigo, no mesmo teclado.</p>
                 </div>
             </div>
         </section>
 
         <section class="games-section">
             <div class="container">
-                <div class="page-gate" data-gate>
-                <div class="gate-content">
-
-                    <!-- Aviso para o streamer, com link para o painel de controlo -->
-                    <a href="controlador.html" class="admin-only hidden admin-shortcut-banner">
-                        <i class="fas fa-sliders"></i>
-                        <span>És o streamer — gere as jornadas no Painel de Controlo</span>
-                        <i class="fas fa-arrow-right"></i>
-                    </a>
-
-                    <!-- Jornadas abertas para apostar -->
-                    <div class="apostas-section">
-                        <h2 class="apostas-section-title"><i class="fas fa-futbol"></i> Jornadas Abertas</h2>
-                        <div id="jornadasAbertas" class="jornadas-list">
-                            <p class="ranking-loading">A carregar jornadas...</p>
-                        </div>
+                <div class="minijogo-card">
+                    <div class="minijogo-embed-wrap">
+                        <iframe
+                            src="https://html5.gamedistribution.com/8d6f5a0f38c94c6b8a013ac330e85c3c/?gdpr-targeting=1&gd_sdk_referrer_url=https://estv.pt/minijogo.html"
+                            title="Futebol Cabeçudo"
+                            scrolling="none"
+                            allow="gamepad *;"
+                            allowfullscreen>
+                        </iframe>
                     </div>
-
-                    <!-- Histórico de jornadas resolvidas -->
-                    <div class="apostas-section">
-                        <h2 class="apostas-section-title"><i class="fas fa-clock-rotate-left"></i> Histórico</h2>
-                        <div id="jornadasHistorico" class="jornadas-list"></div>
-                    </div>
-
-                </div>
-                <div class="gate-overlay">
-                    <div class="gate-icon"><i class="fab fa-twitch"></i></div>
-                    <h3 class="gate-title">Apostas exclusivas para a comunidade</h3>
-                    <p class="gate-text">Entra com a tua conta Twitch para fazeres os teus palpites 1x2 nas jornadas do ESTV.</p>
-                    <button class="gate-login-btn"><i class="fab fa-twitch"></i> Entrar com Twitch</button>
-                </div>
+                    <p class="minijogo-nota"><i class="fas fa-circle-info"></i> Jogo fornecido por um parceiro externo (GameDistribution). Pode demorar alguns segundos a carregar e pode mostrar um anúncio antes de começar.</p>
                 </div>
             </div>
         </section>
@@ -135,6 +115,5 @@
     <script src="estv-config.js?v=1"></script>
     <script src="estv-data.js?v=4"></script>
     <script src="twitch-auth.js?v=2"></script>
-    <script src="apostas.js?v=4"></script>
 </body>
 </html>

@@ -4097,8 +4097,10 @@ h1, h2, h3,
 
 .res-days {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
+  grid-template-columns: repeat(7, minmax(4.4rem, 1fr));
+  gap: 0.35rem;
+  overflow-x: auto;
+  scrollbar-width: none;
   background: rgba(24, 24, 27, 0.9);
   border: 1px solid var(--border-color);
   border-radius: 1rem;
@@ -4133,6 +4135,24 @@ h1, h2, h3,
 
 .res-day:hover {
   color: #fff;
+}
+
+.res-days::-webkit-scrollbar {
+  display: none;
+}
+
+.res-day.today:not(.active) strong {
+  color: var(--blue-light);
+}
+
+.res-jump-note {
+  font-size: 0.82rem;
+  color: var(--gray-text);
+  text-align: center;
+}
+
+.res-jump-note i {
+  color: var(--blue-light);
 }
 
 .res-day.active {

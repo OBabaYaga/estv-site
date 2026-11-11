@@ -19,6 +19,12 @@
   const LIGAS = [
     { id: 94, nome: 'Liga Portugal', pais: 'Portugal' },
     { id: 2, nome: 'Champions League', pais: 'Europa' },
+    { id: 5, nome: 'Liga das Nações', pais: 'Seleções' },
+    { id: 32, nome: 'Qualificação Mundial', pais: 'Seleções · Europa' },
+    { id: 960, nome: 'Qualificação Europeu', pais: 'Seleções' },
+    { id: 1, nome: 'Mundial', pais: 'Seleções' },
+    { id: 4, nome: 'Europeu', pais: 'Seleções' },
+    { id: 10, nome: 'Amigáveis', pais: 'Seleções' },
     { id: 39, nome: 'Premier League', pais: 'Inglaterra' },
     { id: 140, nome: 'La Liga', pais: 'Espanha' },
     { id: 135, nome: 'Serie A', pais: 'Itália' },
@@ -30,7 +36,10 @@
   const TERMINADO = ['FT', 'AET', 'PEN'];
   const REFRESH_MS = 60 * 1000;
 
-  let diaOffset = 0; // -1 ontem, 0 hoje, 1 amanhã
+  const DIAS_ANTES = 3;
+  const DIAS_DEPOIS = 3;
+  let diaOffset = 0; // 0 = hoje, -1 = ontem, 1 = amanhã, ...
+  let saltouDeHoje = false;
   let ligaAtiva = 'todas';
   let soDireto = false;
   let jogos = [];
@@ -53,7 +62,8 @@
 
   let erroAtual = null;
 
-  async function carregar() {
+  async function carregar(opcoes) {
+    opcoes = opcoes || {};
     const data = dataISO(diaOffset);
     const base = typeof ESTV_CONFIG !== 'undefined' ? ESTV_CONFIG.API_BASE_URL : '';
     try {
@@ -65,6 +75,17 @@
       erroAtual = null;
       mostrarDemo(false);
       setAtualizado(json.atualizadoEm || Date.now(), json.aviso);
+      if (opcoes.procurarProximo && !jogos.length && diaOffset < DIAS_DEPOIS) {
+        // Hoje não há jogos: salta para o próximo dia que tenha.
+        diaOffset++;
+        saltouDeHoje = true;
+        return carregar(opcoes);
+      }
+      if (opcoes.procurarProximo && !jogos.length) {
+        diaOffset = 0;
+        saltouDeHoje = false;
+        return carregar();
+      }
     } catch (e) {
       if (emModoLocal()) {
         jogos = dadosExemplo(diaOffset);
@@ -93,6 +114,44 @@
   }
 
   // ---------------------------------------------------------------
+  // Traduções (a API-Football devolve tudo em inglês)
+  // ---------------------------------------------------------------
+  const NOMES_PT = {
+    Spain: 'Espanha', France: 'França', England: 'Inglaterra', Germany: 'Alemanha', Italy: 'Itália',
+    Netherlands: 'Países Baixos', Belgium: 'Bélgica', Croatia: 'Croácia', Switzerland: 'Suíça',
+    Denmark: 'Dinamarca', Austria: 'Áustria', Scotland: 'Escócia', Wales: 'País de Gales',
+    'Northern Ireland': 'Irlanda do Norte', Ireland: 'Irlanda', Norway: 'Noruega', Sweden: 'Suécia',
+    Finland: 'Finlândia', Iceland: 'Islândia', Poland: 'Polónia', 'Czech Republic': 'Chéquia',
+    Czechia: 'Chéquia', Slovakia: 'Eslováquia', Slovenia: 'Eslovénia', Hungary: 'Hungria',
+    Romania: 'Roménia', Bulgaria: 'Bulgária', Greece: 'Grécia', Turkey: 'Turquia', Türkiye: 'Turquia',
+    Ukraine: 'Ucrânia', Serbia: 'Sérvia', Albania: 'Albânia', Georgia: 'Geórgia', Armenia: 'Arménia',
+    Israel: 'Israel', Cyprus: 'Chipre', Luxembourg: 'Luxemburgo', Andorra: 'Andorra',
+    Brazil: 'Brasil', Argentina: 'Argentina', Uruguay: 'Uruguai', Colombia: 'Colômbia', Mexico: 'México',
+    USA: 'EUA', Canada: 'Canadá', Morocco: 'Marrocos', Japan: 'Japão', 'South Korea': 'Coreia do Sul',
+    'Cape Verde Islands': 'Cabo Verde', Angola: 'Angola', Mozambique: 'Moçambique', Senegal: 'Senegal',
+    Egypt: 'Egito', Nigeria: 'Nigéria', Australia: 'Austrália', 'Saudi Arabia': 'Arábia Saudita',
+  };
+
+  function nomeEquipa(nome) {
+    return NOMES_PT[nome] || nome;
+  }
+
+  function traduzirRonda(r) {
+    if (!r) return '';
+    return r
+      .replace(/^Regular Season - (\d+)/, 'Jornada $1')
+      .replace(/^League Stage - (\d+)/, 'Fase de liga · J$1')
+      .replace(/^League ([A-D]) - (\d+)/, 'Liga $1 · J$2')
+      .replace(/^Group Stage - (\d+)/, 'Fase de grupos · J$1')
+      .replace(/^Group ([A-Z]) - (\d+)/, 'Grupo $1 · J$2')
+      .replace(/^Round of 16/, 'Oitavos de final')
+      .replace(/^Quarter-finals/, 'Quartos de final')
+      .replace(/^Semi-finals/, 'Meias-finais')
+      .replace(/^Final$/, 'Final')
+      .replace(/^Friendlies( \d+)?/, 'Amigável');
+  }
+
+  // ---------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------
   function esc(s) {
@@ -100,7 +159,7 @@
   }
 
   function iniciais(nome) {
-    return nome
+    return nomeEquipa(nome)
       .replace(/^(FC|SC|SL|CD|AC|AS|SS|RC|CF|Sp\.)\s+/i, '')
       .split(/\s+/)
       .slice(0, 2)
@@ -161,8 +220,8 @@
         <button class="res-match-row" type="button">
           <span class="res-match-status">${estadoHtml(f)}</span>
           <span class="res-teams">
-            <span class="res-team${vence('home')}">${emblema(f.teams.home)}<span class="res-team-name">${esc(f.teams.home.name)}</span></span>
-            <span class="res-team${vence('away')}">${emblema(f.teams.away)}<span class="res-team-name">${esc(f.teams.away.name)}</span></span>
+            <span class="res-team${vence('home')}">${emblema(f.teams.home)}<span class="res-team-name">${esc(nomeEquipa(f.teams.home.name))}</span></span>
+            <span class="res-team${vence('away')}">${emblema(f.teams.away)}<span class="res-team-name">${esc(nomeEquipa(f.teams.away.name))}</span></span>
           </span>
           <span class="res-score${vivo ? ' live' : ''}">
             <span>${naoComecou ? '' : g.home}</span>
@@ -177,14 +236,24 @@
   function renderDias() {
     const wrap = document.getElementById('resDays');
     const nomes = { '-1': 'Ontem', 0: 'Hoje', 1: 'Amanhã' };
-    wrap.innerHTML = [-1, 0, 1]
+    const offsets = [];
+    for (let o = -DIAS_ANTES; o <= DIAS_DEPOIS; o++) offsets.push(o);
+    wrap.innerHTML = offsets
       .map((o) => {
         const d = new Date();
         d.setDate(d.getDate() + o);
-        const sub = d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }).replace('.', '');
-        return `<button class="res-day${o === diaOffset ? ' active' : ''}" data-dia="${o}"><strong>${nomes[o]}</strong><span>${sub}</span></button>`;
+        const semana = d.toLocaleDateString('pt-PT', { weekday: 'short' }).replace('.', '');
+        const titulo = nomes[o] || semana.charAt(0).toUpperCase() + semana.slice(1);
+        const sub = d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+        return `<button class="res-day${o === diaOffset ? ' active' : ''}${o === 0 ? ' today' : ''}" data-dia="${o}"><strong>${titulo}</strong><span>${sub}</span></button>`;
       })
       .join('');
+    const ativo = wrap.querySelector('.res-day.active');
+    if (ativo && wrap.scrollWidth > wrap.clientWidth) {
+      wrap.scrollLeft = ativo.offsetLeft - wrap.clientWidth / 2 + ativo.clientWidth / 2;
+    }
+    const aviso = document.getElementById('resSaltoAviso');
+    if (aviso) aviso.classList.toggle('hidden', !(saltouDeHoje && diaOffset > 0));
   }
 
   function renderLigas() {
@@ -228,7 +297,7 @@
           return va - vb || new Date(a.fixture.date) - new Date(b.fixture.date);
         });
       if (!daLiga.length) return '';
-      const ronda = daLiga[0].league.round ? esc(daLiga[0].league.round.replace('Regular Season - ', 'Jornada ').replace('League Stage - ', 'Fase de liga · J')) : '';
+      const ronda = esc(traduzirRonda(daLiga[0].league.round));
       return `
         <div class="res-league">
           <div class="res-league-head">
@@ -249,6 +318,7 @@
       const b = e.target.closest('[data-dia]');
       if (!b) return;
       diaOffset = Number(b.dataset.dia);
+      saltouDeHoje = false;
       ligaAtiva = 'todas';
       carregar();
     });
@@ -275,7 +345,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     ligarEventos();
-    carregar();
+    carregar({ procurarProximo: true });
     timer = setInterval(() => {
       if (document.visibilityState === 'visible' && diaOffset === 0) carregar();
     }, REFRESH_MS);

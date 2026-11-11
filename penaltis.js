@@ -394,21 +394,25 @@
     }
   }
 
-  function baterPenalti() {
+  async function baterPenalti() {
     if (aBaterPenalti) return;
     const user = currentUser();
     if (!user) return;
 
-    const resultado = ESTVData.chutarPenalti(user.login, apostaAtual, corSelecionada);
+    aBaterPenalti = true;
+    const baterBtn = document.getElementById('baterBtn');
+    if (baterBtn) baterBtn.disabled = true;
+
+    const resultado = await ESTVData.chutarPenalti(user.login, apostaAtual, corSelecionada);
     if (!resultado.sucesso) {
+      aBaterPenalti = false;
+      if (baterBtn) baterBtn.disabled = false;
       alert(resultado.erro);
+      renderPontos();
       renderLimite();
       return;
     }
 
-    aBaterPenalti = true;
-    const baterBtn = document.getElementById('baterBtn');
-    if (baterBtn) baterBtn.disabled = true;
     resetStage();
 
     jogarAnimacao(resultado.golo, () => {
@@ -430,6 +434,13 @@
 
   // Chamado pelo twitch-auth.js sempre que o estado de login muda
   window.onAuthChange = renderAll;
+
+  // Saldo/limite atualizados a partir do servidor (ex: jogaste no
+  // telemóvel e voltaste ao PC).
+  document.addEventListener('estv:estado', () => {
+    renderPontos();
+    if (!aBaterPenalti) renderLimite();
+  });
 
   document.addEventListener('DOMContentLoaded', () => {
     renderAll();

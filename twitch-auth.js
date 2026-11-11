@@ -185,17 +185,41 @@ const TwitchAuth = (function () {
     return typeof ESTVData !== 'undefined' && typeof ESTVData.isRemoteEnabled === 'function' && ESTVData.isRemoteEnabled();
   }
 
-  // Antes de montar o currentUser, busca o saldo REAL (StreamElements) e
-  // substitui o valor local em cache por ele — só para logins Twitch a
-  // sério (nunca para o Modo de Teste, que não tem token válido para
-  // autenticar pedidos ao backend).
+  // Antes de montar o currentUser, busca ao servidor os pontos Twitch,
+  // o saldo do site, as cartas e os penáltis — assim o telemóvel e o PC
+  // mostram sempre o mesmo. Só para logins Twitch a sério (nunca para o
+  // Modo de Teste, que não tem token válido).
   async function syncRemotePointsIfEnabled(login) {
     if (!isRemoteMode() || !login) return;
-    const remotePoints = await ESTVData.fetchRemotePoints(login);
-    if (remotePoints !== null) {
-      ESTVData.setPointsAbsolute(login, remotePoints);
+    await ESTVData.syncRemoteState(login);
+  }
+
+  // Volta a ler o estado do servidor e avisa a página atual
+  // (cartas.js / penaltis.js ouvem o evento "estv:estado").
+  let syncEmCurso = false;
+  async function refreshFromServer() {
+    if (!currentUser || !isRemoteMode() || syncEmCurso) return;
+    syncEmCurso = true;
+    try {
+      const estado = await ESTVData.syncRemoteState(currentUser.login);
+      if (estado) {
+        refreshCurrentUserStats();
+        renderPlayerStats();
+        document.dispatchEvent(new CustomEvent('estv:estado'));
+      }
+    } finally {
+      syncEmCurso = false;
     }
   }
+
+  // Ao voltar a este separador/app (ex: depois de usar o site no
+  // telemóvel), atualiza logo em vez de esperar pelo próximo minuto.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshFromServer();
+  });
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) refreshFromServer();
+  });
 
   // Regista/atualiza o utilizador na nossa base de dados local (ESTVData)
   // e monta o objeto currentUser com pontos + ranking atuais.
@@ -207,16 +231,24 @@ const TwitchAuth = (function () {
       displayName: displayName || login,
       avatar: avatar || '',
       points: ESTVData.getPoints(login),
-      rank: ESTVData.getRank(login),
+      twitchPoints: ESTVData.getTwitchPoints(login),
+      rank: getRankFor(login),
       isAdmin: CONFIG.ADMIN_LOGINS.map((l) => l.toLowerCase()).includes(login),
     };
     return currentUser;
   }
 
+  // Em produção, a posição no ranking é a do StreamElements (pontos
+  // Twitch); em Modo de Teste usa o ranking local.
+  function getRankFor(login) {
+    return isRemoteMode() ? ESTVData.getTwitchRank(login) : ESTVData.getRank(login);
+  }
+
   function refreshCurrentUserStats() {
     if (!currentUser) return;
     currentUser.points = ESTVData.getPoints(currentUser.login);
-    currentUser.rank = ESTVData.getRank(currentUser.login);
+    currentUser.twitchPoints = ESTVData.getTwitchPoints(currentUser.login);
+    currentUser.rank = getRankFor(currentUser.login);
   }
 
   function renderAuthUI() {
@@ -225,8 +257,10 @@ const TwitchAuth = (function () {
 
     if (currentUser) {
       const pointsText = ESTVData.getPoints(currentUser.login).toLocaleString('pt-PT');
+      const twitchText = ESTVData.getTwitchPoints(currentUser.login).toLocaleString('pt-PT');
       slot.innerHTML = `
-        <span class="nav-points-chip" id="navPointsChip"><i class="fas fa-coins"></i> <span id="navPointsValue">${pointsText}</span></span>
+        <span class="nav-points-chip nav-twitch-chip" id="navTwitchChip" title="Pontos Twitch (por veres as lives — nunca são gastos)"><i class="fab fa-twitch"></i> <span id="navTwitchValue">${twitchText}</span></span>
+        <span class="nav-points-chip" id="navPointsChip" title="Saldo para gastar em cartas e penáltis"><i class="fas fa-wallet"></i> <span id="navPointsValue">${pointsText}</span></span>
         <div class="nav-user" id="navUserToggle">
           <img src="${currentUser.avatar || 'https://static-cdn.jtvnw.net/user-default-pictures-uv/de130ab0-def7-11e9-b668-784f43822e80-profile_image-70x70.png'}" alt="${currentUser.displayName}" class="nav-user-avatar">
           <span class="nav-user-name">${currentUser.displayName}${currentUser.isAdmin ? ' <span class="nav-admin-tag">ADMIN</span>' : ''}</span>
@@ -268,6 +302,8 @@ const TwitchAuth = (function () {
     if (!currentUser) return;
     const el = document.getElementById('navPointsValue');
     if (el) el.textContent = ESTVData.getPoints(currentUser.login).toLocaleString('pt-PT');
+    const tw = document.getElementById('navTwitchValue');
+    if (tw) tw.textContent = ESTVData.getTwitchPoints(currentUser.login).toLocaleString('pt-PT');
   }
 
   function renderPlayerStats() {
@@ -286,6 +322,7 @@ const TwitchAuth = (function () {
     refreshCurrentUserStats();
 
     const pointsText = currentUser.points != null ? currentUser.points.toLocaleString('pt-PT') : '--';
+    const twitchText = currentUser.twitchPoints != null ? currentUser.twitchPoints.toLocaleString('pt-PT') : '--';
     const rankText = currentUser.rank != null ? '#' + currentUser.rank : '--';
 
     card.innerHTML = `
@@ -296,8 +333,12 @@ const TwitchAuth = (function () {
         <span class="player-stats-name">${currentUser.displayName}</span>
         <div class="player-stats-metrics">
           <div class="player-stats-metric">
+            <span class="player-stats-value">${twitchText}</span>
+            <span class="player-stats-label"><i class="fab fa-twitch"></i> Pontos Twitch</span>
+          </div>
+          <div class="player-stats-metric">
             <span class="player-stats-value">${pointsText}</span>
-            <span class="player-stats-label"><i class="fas fa-coins"></i> Pontos</span>
+            <span class="player-stats-label"><i class="fas fa-wallet"></i> Saldo</span>
           </div>
           <div class="player-stats-metric">
             <span class="player-stats-value">${rankText}</span>
@@ -312,8 +353,9 @@ const TwitchAuth = (function () {
 
     const refreshBtn = document.getElementById('playerStatsRefresh');
     if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => {
+      refreshBtn.addEventListener('click', async () => {
         refreshBtn.classList.add('spinning');
+        await refreshFromServer();
         refreshCurrentUserStats();
         renderPlayerStats();
         setTimeout(() => refreshBtn.classList.remove('spinning'), 300);
@@ -410,15 +452,9 @@ const TwitchAuth = (function () {
       if (isRemoteMode()) {
         // Em modo real, quem atribui pontos por assistir é o próprio
         // StreamElements (o bot dele já conta o tempo de visualização a
-        // sério) — aqui só vamos buscar o saldo atualizado, nunca
-        // inventamos pontos a partir do browser.
-        ESTVData.fetchRemotePoints(currentUser.login).then((pts) => {
-          if (pts !== null) {
-            ESTVData.setPointsAbsolute(currentUser.login, pts);
-            refreshCurrentUserStats();
-            renderPlayerStats();
-          }
-        });
+        // sério) — aqui só vamos buscar o estado atualizado (pontos
+        // Twitch + saldo + cartas), nunca inventamos pontos no browser.
+        refreshFromServer();
       } else if (window.ESTV_STREAM_LIVE) {
         // Modo local/teste: continua a simular pontos por assistir.
         ESTVData.awardWatchPoints(currentUser.login, 1);

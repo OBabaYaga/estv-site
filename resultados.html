@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados - ESTV</title>
+    <link rel="icon" href="assets/logo-b.png">
+    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Unbounded:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar">
+            <a href="index.html#home" class="sidebar-brand">
+                <img src="assets/logo-a.png" alt="ESTV" class="nav-logo">
+            </a>
+
+            <nav class="sidebar-nav">
+                <a href="index.html#home" class="nav-link"><i class="fas fa-house"></i> Início</a>
+                <a href="apostas.html" class="nav-link"><i class="fas fa-futbol"></i> Apostas</a>
+                <a href="cartas.html" class="nav-link"><i class="fas fa-id-badge"></i> Cartas</a>
+                <a href="penaltis.html" class="nav-link"><i class="fas fa-bullseye"></i> Penáltis</a>
+                <a href="resultados.html" class="nav-link active"><i class="fas fa-satellite-dish"></i> Resultados</a>
+                <a href="ranking.html" class="nav-link"><i class="fas fa-ranking-star"></i> Ranking</a>
+                <a href="index.html#social" class="nav-link"><i class="fas fa-heart"></i> Redes Sociais</a>
+                <div class="sidebar-divider"></div>
+                <a href="controlador.html" class="nav-link admin-only hidden"><i class="fas fa-sliders"></i> Painel de Controlo</a>
+            </nav>
+
+            <div class="sidebar-promo">
+                <div class="sidebar-promo-title">Segue a live</div>
+                <p class="sidebar-promo-text">Não percas nenhuma jornada — segue o canal na Twitch.</p>
+                <a href="https://www.twitch.tv/edu___silva" target="_blank" class="sidebar-promo-btn"><i class="fab fa-twitch"></i> Twitch</a>
+            </div>
+        </aside>
+
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+        <div class="app-main">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="topbar-toggle" id="sidebarToggle" aria-label="Abrir menu"><i class="fas fa-bars"></i></button>
+                    <a href="index.html#home" class="topbar-brand">
+                        <img src="assets/logo-a.png" alt="ESTV" class="nav-logo">
+                    </a>
+                </div>
+                <div class="nav-auth" id="navAuth"></div>
+            </header>
+
+    <main>
+        <section class="games-hero">
+            <div class="container">
+                <div class="games-hero-content">
+                    <h1 class="games-hero-title">Resultados</h1>
+                    <p class="games-hero-subtitle">Jogos em direto e resultados das principais ligas, sempre atualizados.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="games-section">
+            <div class="container">
+                <div class="res-wrap">
+                    <div class="res-demo-banner hidden" id="resDemoBanner"><i class="fas fa-flask"></i> Pré-visualização com dados de exemplo</div>
+
+                    <div class="res-days" id="resDays"></div>
+                    <div class="res-leagues" id="resLeagues"></div>
+
+                    <div class="res-toolbar">
+                        <label class="res-live-toggle"><input type="checkbox" id="resSoLive"> <span class="res-live-dot"></span> Só em direto</label>
+                        <span class="res-updated" id="resUpdated"></span>
+                    </div>
+
+                    <div id="resList"><p class="ranking-loading">A carregar jogos...</p></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <img src="assets/logo-b.png" alt="ESTV">
+                    <div>
+                        <div class="footer-brand-name">ESTV</div>
+                        <div class="footer-brand-tagline">Streamer de Futebol</div>
+                    </div>
+                </div>
+                <div class="footer-social">
+                    <a href="https://www.twitch.tv/edu___silva" target="_blank" aria-label="Twitch"><i class="fab fa-twitch"></i></a>
+                    <a href="https://www.instagram.com/edu_silva_3/" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.youtube.com/@edusilva_3" target="_blank" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-content">
+                <div class="footer-bottom">
+                    <p>© 2026 ESTV. Todos os direitos reservados. Pontos e apostas são fictícios, sem qualquer valor monetário.</p>
+                    <div class="footer-links">
+                        <a href="#">Termos de Uso</a>
+                        <a href="#">Privacidade</a>
+                        <a href="contacto.html">Contacto</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+        </div>
+    </div>
+
+    <script src="script.js?v=3"></script>
+    <script src="estv-config.js?v=1"></script>
+    <script src="estv-data.js?v=5"></script>
+    <script src="twitch-auth.js?v=3"></script>
+    <script src="resultados.js?v=2"></script>
+</body>
+</html>

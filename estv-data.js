@@ -2,15 +2,20 @@
 // ESTV — Camada de dados (pontos + apostas 1x2)
 // ===================================================================
 //
-// MODO ATUAL: tudo guardado em localStorage (só funciona no browser de
-// cada pessoa — bom para testar sozinho, mas os palpites e o ranking
-// NÃO são partilhados entre viewers diferentes).
+// DUAS CARTEIRAS DE PONTOS por viewer:
+//   - Pontos Twitch (StreamElements): os pontos de visualização. O site
+//     só os mostra — nunca os gasta.
+//   - Saldo do site: acumula os mesmos pontos de visualização, mas é o
+//     que se gasta nas cartas e penáltis (e onde caem os prémios das
+//     jornadas).
 //
-// PARA PRODUÇÃO: substituir as funções loadDB()/saveDB() por chamadas a
-// uma base de dados partilhada (ex: Firebase Firestore). Todas as outras
-// funções deste ficheiro (ensureUser, addPoints, createJornada, etc.)
-// podem manter exatamente a mesma assinatura — só é preciso trocar a
-// forma como os dados são lidos/escritos.
+// Com ESTV_CONFIG.REMOTE_POINTS = true (produção), o saldo, as cartas e
+// o limite de penáltis vivem no servidor (estv-api), por isso são os
+// mesmos no telemóvel e no PC. O localStorage aqui é só uma cópia em
+// cache para a página desenhar depressa.
+//
+// Com REMOTE_POINTS = false (Modo de Teste), tudo continua só neste
+// browser, como antes.
 // ===================================================================
 
 const ESTVData = (function () {
@@ -192,7 +197,6 @@ const ESTVData = (function () {
     if (!db.users[login]) db.users[login] = { login, displayName: login, avatar: '', points: 0 };
     db.users[login].points = Math.max(0, Math.round((db.users[login].points || 0) + delta));
     saveDB(db);
-    syncPointsDeltaRemote(login, delta);
     return db.users[login].points;
   }
 
@@ -223,46 +227,70 @@ const ESTVData = (function () {
     );
   }
 
-  // Envia a variação de pontos para o backend (que por sua vez ajusta o
-  // saldo real no StreamElements). "Fire-and-forget": não bloqueia nem
-  // atrasa a interface — se falhar (sem rede, sessão expirada, etc.), o
-  // valor local já foi atualizado na mesma, e o próximo refresh de
-  // pontos corrige a diferença.
-  //
-  // Usa sempre o token Twitch guardado no browser de quem está a fazer
-  // o pedido — por isso só serve para ações sobre o PRÓPRIO saldo
-  // (apostar, abrir cartas, bater um penálti). O parâmetro "login" é só
-  // para clareza/registo, o backend ignora qualquer utilizador que não
-  // seja o dono do token.
-  function syncPointsDeltaRemote(login, delta) {
-    if (!isRemoteEnabled()) return;
-    const token = localStorage.getItem('estv_twitch_token');
-    if (!token) return; // sem sessão Twitch real, não há como autenticar o pedido
-    fetch(ESTV_CONFIG.API_BASE_URL + '/api/points', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-      body: JSON.stringify({ amount: delta }),
-      keepalive: true,
-    }).catch(() => {});
+  function getTwitchPoints(login) {
+    const u = getUser(login);
+    if (!u) return 0;
+    // Em Modo de Teste não há StreamElements — mostra o próprio saldo.
+    return isRemoteEnabled() ? u.twitchPoints || 0 : u.points || 0;
   }
 
-  // Variante usada só pelo Painel de Controlo (admin) para distribuir
-  // pontos a OUTRA pessoa — por exemplo, ao resolver uma jornada de
-  // apostas e pagar a vários viewers de uma vez. O backend só honra o
-  // "username" aqui se o token pertencer a uma conta admin (ver
-  // ADMIN_LOGINS no backend); para qualquer outra pessoa isto teria
-  // exatamente o mesmo efeito que syncPointsDeltaRemote (mexe só no
-  // próprio saldo do token).
-  function syncPointsDeltaRemoteFor(targetLogin, delta) {
-    if (!isRemoteEnabled()) return;
-    const token = localStorage.getItem('estv_twitch_token');
-    if (!token) return;
-    fetch(ESTV_CONFIG.API_BASE_URL + '/api/points', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-      body: JSON.stringify({ amount: delta, username: targetLogin }),
-      keepalive: true,
-    }).catch(() => {});
+  function getTwitchRank(login) {
+    const u = getUser(login);
+    return u && u.twitchRank ? u.twitchRank : null;
+  }
+
+  // Grava no cache local o estado que veio do servidor.
+  function applyRemoteState(login, estado) {
+    if (!login || !estado) return;
+    const db = loadDB();
+    login = login.toLowerCase();
+    if (!db.users[login]) db.users[login] = { login, displayName: login, avatar: '', points: 0 };
+    const u = db.users[login];
+    if (typeof estado.saldo === 'number') u.points = Math.max(0, Math.round(estado.saldo));
+    if (typeof estado.twitch === 'number') u.twitchPoints = Math.max(0, Math.round(estado.twitch));
+    if ('rank' in estado) u.twitchRank = estado.rank || null;
+    if (estado.cartas && typeof estado.cartas === 'object') u.cartas = estado.cartas;
+    if (Array.isArray(estado.penaltisTimestamps)) u.penaltisTimestamps = estado.penaltisTimestamps;
+    saveDB(db);
+  }
+
+  function migracaoKey(login) {
+    return 'estv_cartas_migradas_' + login.toLowerCase();
+  }
+
+  // Vai buscar ao servidor o saldo, pontos Twitch, cartas e penáltis
+  // desta pessoa e atualiza o cache local. Na primeira vez em cada
+  // aparelho, envia também as cartas que já estavam guardadas só neste
+  // browser (versão antiga do site) para não se perderem.
+  async function syncRemoteState(login) {
+    if (!isRemoteEnabled() || !login) return null;
+    login = login.toLowerCase();
+    try {
+      const token = localStorage.getItem('estv_twitch_token');
+      let jaMigrado = true;
+      try {
+        jaMigrado = localStorage.getItem(migracaoKey(login)) === '1';
+      } catch (e) {}
+      if (token && !jaMigrado) {
+        const local = getUser(login);
+        const cartasLocais = (local && local.cartas) || {};
+        if (Object.keys(cartasLocais).length) {
+          await apiRequest('POST', '/api/cartas', { acao: 'importar', cartas: cartasLocais });
+        }
+        try {
+          localStorage.setItem(migracaoKey(login), '1');
+        } catch (e) {}
+      }
+
+      const res = await fetch(ESTV_CONFIG.API_BASE_URL + '/api/points?username=' + encodeURIComponent(login), { cache: 'no-store' });
+      if (!res.ok) return null;
+      const estado = await res.json();
+      applyRemoteState(login, estado);
+      return estado;
+    } catch (e) {
+      console.warn('[ESTVData] falha ao sincronizar com o servidor', e);
+      return null;
+    }
   }
 
   // Lê o saldo real e atual de alguém diretamente do backend (sem tocar
@@ -471,7 +499,6 @@ const ESTVData = (function () {
 
       if (!db.users[login]) db.users[login] = { login, displayName: login, avatar: '', points: 0 };
       db.users[login].points = Math.max(0, Math.round(db.users[login].points + pontosGanhos));
-      if (pontosGanhos !== 0) syncPointsDeltaRemoteFor(login, pontosGanhos);
 
       resumo.push({ login, acertos, totalJogos, pontosGanhos, jornadaPerfeita });
     });
@@ -600,10 +627,33 @@ const ESTVData = (function () {
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
-  // Gasta CUSTO_ABRIR_CARTA pontos e atribui uma carta aleatória
-  // (com peso por raridade) à coleção do utilizador.
-  function openPack(login) {
+  // Gasta CUSTO_ABRIR_CARTA do SALDO e atribui uma carta aleatória
+  // (com peso por raridade) à coleção do utilizador. Em produção é o
+  // servidor que sorteia e guarda a carta (a coleção fica igual em
+  // todos os aparelhos). Devolve sempre uma Promise.
+  async function openPack(login) {
     if (!login) return { sucesso: false, erro: 'É preciso ter sessão iniciada.' };
+    if (isRemoteEnabled()) {
+      try {
+        const r = await apiRequest('POST', '/api/cartas', { acao: 'abrir' });
+        applyRemoteState(login, r);
+        const carta = CARD_CATALOG.find((c) => c.id === r.cartaId);
+        if (!carta) return { sucesso: false, erro: 'Carta desconhecida — atualiza a página.' };
+        return {
+          sucesso: true,
+          carta: Object.assign({}, carta),
+          novaCarta: r.novaCarta,
+          quantidade: r.quantidade,
+          pontosRestantes: r.saldo,
+        };
+      } catch (e) {
+        return { sucesso: false, erro: e.message || 'Não foi possível abrir a carta.' };
+      }
+    }
+    return openPackLocal(login);
+  }
+
+  function openPackLocal(login) {
     const db = loadDB();
     login = login.toLowerCase();
     const user = db.users[login];
@@ -617,7 +667,6 @@ const ESTVData = (function () {
     const novaCarta = !user.cartas[carta.id];
     user.cartas[carta.id] = (user.cartas[carta.id] || 0) + 1;
     user.points = Math.max(0, Math.round(user.points - CUSTO_ABRIR_CARTA));
-    syncPointsDeltaRemote(login, -CUSTO_ABRIR_CARTA);
     saveDB(db);
 
     return {
@@ -671,8 +720,30 @@ const ESTVData = (function () {
 
   // Bate o penálti: valida aposta e limite horário, sorteia o resultado
   // e atualiza os pontos. corCamisola é só guardado para a animação.
-  function chutarPenalti(login, aposta, corCamisola) {
+  // Devolve sempre uma Promise. Em produção o resultado é sorteado no
+  // servidor e o limite por hora é contado lá (igual em todos os aparelhos).
+  async function chutarPenalti(login, aposta, corCamisola) {
     if (!login) return { sucesso: false, erro: 'É preciso ter sessão iniciada.' };
+    if (isRemoteEnabled()) {
+      try {
+        const r = await apiRequest('POST', '/api/penaltis', { aposta: Math.round(Number(aposta)) });
+        applyRemoteState(login, r);
+        return {
+          sucesso: true,
+          golo: r.golo,
+          aposta: r.aposta,
+          corCamisola: corCamisola,
+          pontosRestantes: r.saldo,
+          statusPenaltis: getPenaltiStatus(login),
+        };
+      } catch (e) {
+        return { sucesso: false, erro: e.message || 'Não foi possível bater o penálti.' };
+      }
+    }
+    return chutarPenaltiLocal(login, aposta, corCamisola);
+  }
+
+  function chutarPenaltiLocal(login, aposta, corCamisola) {
     aposta = Math.round(Number(aposta));
     if (!Number.isFinite(aposta) || aposta < PENALTI_APOSTA_MIN || aposta > PENALTI_APOSTA_MAX) {
       return { sucesso: false, erro: `A aposta tem de ser entre ${PENALTI_APOSTA_MIN} e ${PENALTI_APOSTA_MAX} pontos.` };
@@ -695,7 +766,6 @@ const ESTVData = (function () {
     const golo = Math.random() < PENALTI_PROBABILIDADE_GOLO;
     const delta = golo ? aposta : -aposta;
     user.points = Math.max(0, Math.round(user.points + delta));
-    syncPointsDeltaRemote(login, delta);
     recentes.push(agora);
     user.penaltisTimestamps = recentes;
     saveDB(db);
@@ -718,6 +788,9 @@ const ESTVData = (function () {
     getPoints,
     addPoints,
     setPointsAbsolute,
+    getTwitchPoints,
+    getTwitchRank,
+    syncRemoteState,
     isRemoteEnabled,
     fetchRemotePoints,
     fetchRemoteLeaderboard,

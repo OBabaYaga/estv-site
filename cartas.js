@@ -208,15 +208,26 @@
     if (overlay) overlay.classList.add('hidden');
   }
 
-  function abrirCarta() {
+  let aAbrir = false;
+
+  async function abrirCarta() {
     const user = currentUser();
-    if (!user) return;
-    const resultado = ESTVData.openPack(user.login);
-    if (!resultado.sucesso) {
-      alert(resultado.erro);
-      return;
+    if (!user || aAbrir) return;
+    aAbrir = true;
+    const abrirBtn = document.getElementById('abrirCartaBtn');
+    if (abrirBtn) abrirBtn.disabled = true;
+    try {
+      const resultado = await ESTVData.openPack(user.login);
+      if (!resultado.sucesso) {
+        alert(resultado.erro);
+        renderPontos();
+        return;
+      }
+      playPackSequence(resultado);
+    } finally {
+      aAbrir = false;
+      if (abrirBtn) abrirBtn.disabled = false;
     }
-    playPackSequence(resultado);
   }
 
   function renderAll() {
@@ -227,6 +238,13 @@
 
   // Chamado pelo twitch-auth.js sempre que o estado de login muda
   window.onAuthChange = renderAll;
+
+  // Quando o saldo/coleção chega atualizado do servidor (ex: compraste
+  // uma carta no telemóvel e voltaste ao PC), volta a desenhar.
+  document.addEventListener('estv:estado', () => {
+    renderPontos();
+    renderCollectionGrid();
+  });
 
   document.addEventListener('DOMContentLoaded', () => {
     renderAll();

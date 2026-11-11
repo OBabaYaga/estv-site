@@ -4,8 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Controlo - ESTV</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#0a0a0b">
+    <link rel="apple-touch-icon" href="assets/app/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ESTV">
     <link rel="icon" href="assets/logo-b.png">
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=6">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Unbounded:wght@600;700;800;900&display=swap" rel="stylesheet">
@@ -96,6 +103,18 @@
                         </div>
                     </div>
 
+                    <div class="admin-panel" id="adminPush">
+                        <div class="admin-panel-header">
+                            <h2><i class="fas fa-bell"></i> Notificações da app</h2>
+                            <p>Os viewers que ativarem os avisos recebem uma notificação no telemóvel/PC quando o canal entra em direto na Twitch.</p>
+                        </div>
+                        <div class="admin-push-info" id="adminPushInfo">A carregar…</div>
+                        <div class="admin-push-botoes">
+                            <button class="btn-primary" id="adminPushLigar"><i class="fab fa-twitch"></i> Ligar aviso de live</button>
+                            <button class="btn-secondary" id="adminPushTestar"><i class="fas fa-paper-plane"></i> Enviar notificação de teste</button>
+                        </div>
+                    </div>
+
                     <div class="apostas-section">
                         <h2 class="apostas-section-title"><i class="fas fa-list-check"></i> Todas as Jornadas</h2>
                         <div class="admin-jornadas-list" id="adminJornadasList"></div>
@@ -132,6 +151,7 @@
     <script src="estv-config.js?v=1"></script>
     <script src="estv-data.js?v=5"></script>
     <script src="twitch-auth.js?v=3"></script>
+    <script src="notificacoes.js?v=1"></script>
     <script src="controlador.js?v=4"></script>
 </body>
 </html>

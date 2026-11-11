@@ -36,8 +36,9 @@
   const TERMINADO = ['FT', 'AET', 'PEN'];
   const REFRESH_MS = 60 * 1000;
 
-  const DIAS_ANTES = 3;
-  const DIAS_DEPOIS = 3;
+  // O plano grátis da API-Football só dá acesso a ontem, hoje e amanhã.
+  const DIAS_ANTES = 1;
+  const DIAS_DEPOIS = 1;
   let diaOffset = 0; // 0 = hoje, -1 = ontem, 1 = amanhã, ...
   let saltouDeHoje = false;
   let ligaAtiva = 'todas';
@@ -70,7 +71,7 @@
       if (!base) throw new Error('A ligação aos resultados não está configurada.');
       const res = await fetch(`${base}/api/resultados?data=${data}`);
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || 'Não foi possível carregar os resultados.');
+      if (!res.ok) throw new Error('Não foi possível carregar os resultados agora. Tenta daqui a pouco.');
       jogos = Array.isArray(json.jogos) ? json.jogos : [];
       erroAtual = null;
       mostrarDemo(false);

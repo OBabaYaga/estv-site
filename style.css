@@ -4097,7 +4097,7 @@ h1, h2, h3,
 
 .res-days {
   display: grid;
-  grid-template-columns: repeat(7, minmax(4.4rem, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.35rem;
   overflow-x: auto;
   scrollbar-width: none;

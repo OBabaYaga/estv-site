@@ -288,3 +288,4 @@ body.tr-com-modal { overflow: hidden; }
 .adm-tr-h input { display: none; }
 .adm-tr-h.on { background: #4f6bef; border-color: #4f6bef; color: #fff; font-weight: 800; }
 @media (max-width: 600px) { .adm-tr-grelha { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+.tr-band { grid-row: span 2; font-size: 2rem; width: 3rem; text-align: center; }

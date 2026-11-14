@@ -15,7 +15,7 @@
   const eur = (v) => TM.fmtEur(v);
   const n0 = (v) => Math.round(Number(v) || 0).toLocaleString('pt-PT');
   const POS_NOME = { G: 'GR', D: 'DEF', M: 'MED', A: 'AV' };
-  const BANDEIRA = { PT: '🇵🇹', BR: '🇧🇷', ES: '🇪🇸', AR: '🇦🇷', CV: '🇨🇻', AO: '🇦🇴', FR: '🇫🇷', SN: '🇸🇳', UY: '🇺🇾', RS: '🇷🇸' };
+  const BANDEIRA = { PT: '🇵🇹', BR: '🇧🇷', ES: '🇪🇸', AR: '🇦🇷', CV: '🇨🇻', AO: '🇦🇴', FR: '🇫🇷', SN: '🇸🇳', UY: '🇺🇾', RS: '🇷🇸' , IT: '🇮🇹', EN: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' };
   const CAR_CURTA = { fin: 'FIN', cab: 'CAB', cru: 'CRU', dri: 'DRI', vel: 'VEL', arm: 'ARM', pas: 'PAS', des: 'DES', mar: 'MAR', res: 'RES', ref: 'REF', col: 'COL', sai: 'SAI', dpe: 'DPE' };
 
   function apiBase() {
@@ -92,6 +92,7 @@
         const raw = localStorage.getItem(LS_KEY);
         if (raw) {
           const d = JSON.parse(raw);
+          if (d && d.mundo) TM.migrar(d.mundo);
           if (d && d.mundo && d.mundo.v === TM.VERSAO) {
             this.mundo = d.mundo;
             this.atualizado = d.ts || 0;
@@ -171,7 +172,7 @@
       return j;
     },
     aplicar(j) {
-      if (j.mundo) this.mundo = j.mundo;
+      if (j.mundo) this.mundo = TM.migrar(j.mundo);
       this.info = j.info || this.info;
       this.login = j.login || this.login;
     },
@@ -262,13 +263,33 @@
       const par = m.fix[c.div][p.r].find((x) => x[0] === cid || x[1] === cid);
       return { tipo: 'L', r: p.r, h: par[0], a: par[1] };
     }
-    const vivos = m.taca.vivos.concat(p.r === 1 ? m.taca.isentos : []);
-    return { tipo: 'T', r: p.r, vivo: vivos.includes(cid) };
+    const tc = minhaTaca(m, m.clubes[cid]);
+    const joga = tc && !tc.campeao && p.r >= tc.inicio;
+    return { tipo: 'T', r: p.r, vivo: !!(joga && tc.vivos.includes(cid)), joga, rn: tc ? TM.nomeRonda(tc) : '' };
   }
   function nomePasso(m, k) {
     const p = m.cal[k == null ? m.passo : k];
     if (!p) return '';
-    return p.t === 'L' ? 'Jornada ' + (p.r + 1) : 'Taça — ' + TM.RONDAS_TACA[p.r];
+    if (p.t === 'L') return 'Jornada ' + (p.r + 1);
+    // ronda de Taça em que ninguém joga (ex.: só há taças mais curtas): mostra o passo seguinte
+    const algum = Object.values(m.tacas || {}).some((t) => !t.campeao && p.r >= t.inicio);
+    if (!algum) return nomePasso(m, (k == null ? m.passo : k) + 1);
+    const c = S.fonte && S.fonte.meu && S.fonte.mundo === m ? S.fonte.meu() : null;
+    const tc = minhaTaca(m, c);
+    return tc && !tc.campeao && p.r >= tc.inicio ? 'Taça — ' + TM.nomeRonda(tc) : 'Taça (noutras ligas)';
+  }
+  function nd(m, d) {
+    return TM.nomeDiv(m, d);
+  }
+  function multi(m) {
+    return (m.paises || []).length > 1;
+  }
+  function ndComPais(m, d) {
+    const i = TM.infoDiv(m, d);
+    return (multi(m) ? (TM.PAISES[i.p] || {}).band + ' ' : '') + nd(m, d);
+  }
+  function minhaTaca(m, c) {
+    return (m.tacas && m.tacas[(c && c.pais) || 'PT']) || null;
   }
   function epocaTxt(m) {
     return m.ano + '/' + String(m.ano + 1).slice(2);
@@ -299,17 +320,31 @@
   }
 
   function renderInicio() {
+    const pais = S.paisInicio;
+    const textoBase =
+      '<ul class="tr-dicas"><li>⚽ Jogos simulados minuto a minuto, com substituições e tática.</li><li>💰 Leilões, compras, vendas, bilheteira, estádio e banco.</li><li>🏆 Divisões, Taça, melhor marcador e carreira de treinador.</li></ul>';
+    if (!pais) {
+      app().innerHTML =
+        '<div class="tr-inicio"><div class="tr-inicio-txt"><h2>Começa a tua carreira</h2>' +
+        '<p>Escolhe o país onde queres treinar. Como no Elifoot, começas por baixo, na divisão mais baixa, e tens de chegar ao topo.</p>' + textoBase + '</div>' +
+        '<div class="tr-ofertas">' +
+        Object.entries(TM.PAISES).map(([k, P]) => '<button class="tr-oferta" data-acao="pais-inicio" data-p="' + k + '"><span class="tr-band">' + P.band + '</span><span class="tr-oferta-nome">' + esc(P.nome) + '</span><span class="tr-oferta-info">' + P.divs.length + ' divisões · ' + P.clubes.length + ' clubes · começas na ' + esc(P.divs[P.divs.length - 1]) + '</span></button>').join('') +
+        '</div></div>';
+      return;
+    }
     const sem = (Date.now() ^ (Math.random() * 1e9)) >>> 0;
     S.semente = S.semente || sem;
-    const preview = TM.criarMundo(S.semente);
+    const preview = TM.criarMundo(S.semente, { paises: [pais] });
     const rng = TM.criarRng(S.semente ^ 0x9e3779b9);
-    const d4 = preview.divs[3].slice().sort(() => rng.r() - 0.5).slice(0, 3);
+    const ds = TM.divsDoPais(preview, pais);
+    const ultima = ds[ds.length - 1];
+    const d4 = preview.divs[ultima].slice().sort(() => rng.r() - 0.5).slice(0, 3);
     S.preview = preview;
     app().innerHTML =
       '<div class="tr-inicio">' +
-      '<div class="tr-inicio-txt"><h2>Começa a tua carreira</h2>' +
-      '<p>Como no Elifoot, começas por baixo: escolhe um dos três clubes da <b>4.ª divisão</b> que te convidaram. Ganha jogos, compra bem, sobe de divisão e espera pelos convites dos clubes grandes. Se perderes muitos jogos seguidos ou afundares o clube em dívidas, és despedido.</p>' +
-      '<ul class="tr-dicas"><li>⚽ Jogos simulados minuto a minuto, com substituições e tática.</li><li>💰 Leilões, compras, vendas, bilheteira, estádio e banco.</li><li>🏆 4 divisões, Taça, melhor marcador e ranking de treinadores.</li></ul>' +
+      '<div class="tr-inicio-txt"><h2>' + TM.PAISES[pais].band + ' Começa a tua carreira em ' + esc(TM.PAISES[pais].nome) + '</h2>' +
+      '<p>Escolhe um dos três clubes da <b>' + esc(TM.nomeDiv(preview, ultima)) + '</b> que te convidaram. Ganha jogos, compra bem, sobe de divisão e espera pelos convites dos clubes grandes. Se perderes muitos jogos seguidos ou afundares o clube em dívidas, és despedido.</p>' +
+      textoBase +
       (token() ? '<p class="tr-nota">A tua carreira fica guardada neste browser e na tua conta, para continuares noutro PC ou telemóvel.</p>' : '<p class="tr-nota">Dica: entra com a Twitch para guardar a carreira na tua conta e continuares noutro PC ou telemóvel.</p>') +
       '</div><div class="tr-ofertas">' +
       d4
@@ -320,7 +355,7 @@
           return '<button class="tr-oferta" data-acao="escolher-clube" data-id="' + id + '">' + emblema(c, 'g') + '<span class="tr-oferta-nome">' + esc(c.n) + '</span><span class="tr-oferta-info">Força média ' + Math.round(media) + ' · ' + n0(c.lug) + ' lugares · ' + eur(c.din) + '</span></button>';
         })
         .join('') +
-      '<button class="tr-link" data-acao="outros-clubes"><i class="fas fa-dice"></i> Outros convites</button></div></div>';
+      '<button class="tr-link" data-acao="outros-clubes"><i class="fas fa-dice"></i> Outros convites</button><button class="tr-link" data-acao="pais-inicio" data-p=""><i class="fas fa-earth-europe"></i> Escolher outro país</button></div></div>';
   }
 
   function renderOfertas(fonte) {
@@ -334,7 +369,7 @@
       (ofertas.length ? ofertas : Object.values(m.clubes).filter((c) => !c.hum && c.div === 3).slice(0, 3).map((c) => c.id))
         .map((id) => {
           const c = m.clubes[id];
-          return '<button class="tr-oferta" data-acao="assumir" data-id="' + id + '">' + emblema(c, 'g') + '<span class="tr-oferta-nome">' + esc(c.n) + '</span><span class="tr-oferta-info">' + TM.NOMES_DIV[c.div] + ' · ' + eur(c.din) + '</span></button>';
+          return '<button class="tr-oferta" data-acao="assumir" data-id="' + id + '">' + emblema(c, 'g') + '<span class="tr-oferta-nome">' + esc(c.n) + '</span><span class="tr-oferta-info">' + ndComPais(m, c.div) + ' · ' + eur(c.din) + '</span></button>';
         })
         .join('') +
       (fonte === Carreira ? '<button class="tr-link" data-acao="nova-carreira"><i class="fas fa-rotate"></i> Começar uma carreira nova</button>' : '') +
@@ -361,7 +396,7 @@
     app().innerHTML =
       '<div class="tr-jogo">' +
       '<aside class="tr-clube">' +
-      '<div class="tr-clube-topo">' + emblema(c, 'g') + '<div><div class="tr-clube-nome">' + esc(c.n) + '</div><div class="tr-clube-div">' + TM.NOMES_DIV[c.div] + ' · ' + lugar + '.º lugar</div></div></div>' +
+      '<div class="tr-clube-topo">' + emblema(c, 'g') + '<div><div class="tr-clube-nome">' + esc(c.n) + '</div><div class="tr-clube-div">' + esc(ndComPais(m, c.div)) + ' · ' + lugar + '.º lugar</div></div></div>' +
       '<div class="tr-clube-linha"><span>Época</span><b>' + epocaTxt(m) + '</b></div>' +
       '<div class="tr-clube-linha"><span>A seguir</span><b>' + esc(nomePasso(m)) + '</b></div>' +
       '<div class="tr-clube-linha"><span>Dinheiro</span><b class="' + (c.din < 0 ? 'neg' : '') + '">' + eur(c.din) + '</b></div>' +
@@ -542,9 +577,10 @@
     const u = m.ultimos;
     let ult = '';
     if (u && u.jogos && u.jogos.length) {
-      const meus = u.t === 'L' ? u.jogos.filter((x) => x.dv === c.div) : u.jogos;
-      ult = '<h3 class="tr-h3">Resultados — ' + (u.t === 'L' ? 'Jornada ' + (u.r + 1) : 'Taça, ' + TM.RONDAS_TACA[u.r]) + '</h3><div class="tr-res">' + meus.map((x) => linhaRes(m, x, c.id)).join('') + '</div>';
+      const meus = u.t === 'L' ? u.jogos.filter((x) => x.dv === c.div) : u.jogos.filter((x) => (x.pa || 'PT') === c.pais);
+      ult = '<h3 class="tr-h3">Resultados — ' + (u.t === 'L' ? 'Jornada ' + (u.r + 1) : 'Taça') + '</h3><div class="tr-res">' + meus.map((x) => linhaRes(m, x, c.id)).join('') + '</div>';
       if (u.t === 'L') ult += '<details class="tr-det"><summary>Outras divisões</summary><div class="tr-res">' + u.jogos.filter((x) => x.dv !== c.div).map((x) => linhaRes(m, x, c.id)).join('') + '</div></details>';
+      else if (multi(m)) ult += '<details class="tr-det"><summary>Taças dos outros países</summary><div class="tr-res">' + u.jogos.filter((x) => (x.pa || 'PT') !== c.pais).map((x) => linhaRes(m, x, c.id)).join('') + '</div></details>';
     }
     return '<div class="tr-jornada">' + prox + (fonte.podeJogar ? '<button class="tr-btn-jogar grande" data-acao="jogar"><i class="fas fa-play"></i> Jogar ' + esc(nomePasso(m)) + '</button>' : '') + ult + '</div>';
   }
@@ -569,11 +605,13 @@
     const cls = TM.classificacao(m, d);
     const art = TM.artilheiros(m, 10);
     return (
-      '<div class="tr-divsel">' + TM.NOMES_DIV.map((n, k) => '<button class="tr-chip' + (k === d ? ' ativo' : '') + '" data-acao="div" data-d="' + k + '">' + n + '</button>').join('') + '</div>' +
+      '<div class="tr-divsel">' + m.divs.map((_, k) => '<button class="tr-chip' + (k === d ? ' ativo' : '') + '" data-acao="div" data-d="' + k + '">' + esc(ndComPais(m, k)) + '</button>').join('') + '</div>' +
       '<div class="tr-tabela-wrap"><table class="tr-tabela tr-class"><thead><tr><th>#</th><th>Clube</th><th>P</th><th>J</th><th class="m-esc">V</th><th class="m-esc">E</th><th class="m-esc">D</th><th>GM</th><th>GS</th><th class="m-esc">Forma</th></tr></thead><tbody>' +
       cls.map((l, k) => {
         const cl = m.clubes[l.id];
-        const zona = d > 0 && k < 2 ? 'sobe' : d < 3 && k >= 8 ? 'desce' : '';
+        const inf = TM.infoDiv(m, d);
+        const nDivs = TM.divsDoPais(m, inf.p).length;
+        const zona = inf.n > 0 && k < 2 ? 'sobe' : inf.n < nDivs - 1 && k >= 8 ? 'desce' : '';
         return '<tr class="' + zona + (l.id === c.id ? ' meu' : '') + '"><td>' + (k + 1) + '</td><td class="tr-nomec">' + emblema(cl, 'p') + ' ' + esc(cl.n) + (cl.hum && cl.hum !== EU ? ' <small class="tr-hum">' + esc(cl.hum) + '</small>' : '') + '</td><td><b>' + l.p + '</b></td><td>' + l.j + '</td><td class="m-esc">' + l.v + '</td><td class="m-esc">' + l.e + '</td><td class="m-esc">' + l.d + '</td><td>' + l.gm + '</td><td>' + l.gs + '</td><td class="m-esc">' + (l.forma || '').split('').map((x) => '<span class="tr-f ' + x + '">' + x + '</span>').join('') + '</td></tr>';
       }).join('') +
       '</tbody></table></div><p class="tr-legenda"><span class="sobe">■</span> sobem · <span class="desce">■</span> descem · 2 sobem e 2 descem no fim da época</p>' +
@@ -587,18 +625,23 @@
   function vTaca(fonte) {
     const m = fonte.mundo;
     const c = fonte.meu();
-    const tc = m.taca;
-    const vivos = tc.vivos.concat(tc.ronda <= 1 ? tc.isentos : []);
-    let html = '<div class="tr-taca-topo"><i class="fas fa-trophy"></i><div><b>Taça ' + epocaTxt(m) + '</b><br>' + (tc.campeao ? 'Vencedor: <b>' + esc(nomeClube(m, tc.campeao)) + '</b>' : 'Próxima ronda: ' + TM.RONDAS_TACA[Math.min(5, tc.ronda)] + ' · ' + vivos.length + ' clubes em prova') + (vivos.includes(c.id) && !tc.campeao ? ' · <b class="ok">o teu clube continua em prova</b>' : '') + '</div></div>';
-    for (let r = 5; r >= 0; r--) {
+    const pais = S.pTaca && m.tacas[S.pTaca] ? S.pTaca : c.pais || 'PT';
+    const tc = m.tacas[pais];
+    let html = multi(m) ? '<div class="tr-divsel">' + m.paises.map((p) => '<button class="tr-chip' + (p === pais ? ' ativo' : '') + '" data-acao="pais-taca" data-p="' + p + '">' + TM.PAISES[p].band + ' ' + esc(TM.PAISES[p].nome) + '</button>').join('') + '</div>' : '';
+    const emProva = !tc.campeao && tc.vivos.concat(tc.isentos || []).includes(c.id);
+    html += '<div class="tr-taca-topo"><i class="fas fa-trophy"></i><div><b>Taça' + (multi(m) ? ' de ' + esc(TM.PAISES[pais].nome) : '') + ' ' + epocaTxt(m) + '</b><br>' + (tc.campeao ? 'Vencedor: <b>' + esc(nomeClube(m, tc.campeao)) + '</b>' : 'Próxima ronda: ' + esc(TM.nomeRonda(tc)) + ' · ' + (tc.vivos.length + (tc.isentos || []).length) + ' clubes em prova') + (emProva ? ' · <b class="ok">o teu clube continua em prova</b>' : '') + '</div></div>';
+    const rondas = [];
+    for (const x of tc.jogos) if (!rondas.includes(x.r)) rondas.push(x.r);
+    rondas.sort((a, b) => b - a);
+    for (const r of rondas) {
       const js = tc.jogos.filter((x) => x.r === r);
-      if (!js.length) continue;
-      html += '<h3 class="tr-h3">' + TM.RONDAS_TACA[r] + '</h3><div class="tr-res">' + js.map((x) => linhaRes(m, Object.assign({}, x), c.id).replace('data-acao="ver-jogo"', 'data-acao="nada"')).join('') + '</div>';
+      html += '<h3 class="tr-h3">' + esc(js[0].rn || TM.RONDAS_TACA[r] || '') + '</h3><div class="tr-res">' + js.map((x) => linhaRes(m, Object.assign({}, x), c.id).replace('data-acao="ver-jogo"', 'data-acao="nada"')).join('') + '</div>';
     }
-    const hist = m.historia.filter((h) => h.taca).slice(0, 8);
-    if (hist.length) html += '<h3 class="tr-h3">Vencedores anteriores</h3><ul class="tr-lista">' + hist.map((h) => '<li>' + h.ano + '/' + String(h.ano + 1).slice(2) + ': <b>' + esc(nomeClube(m, h.taca)) + '</b></li>').join('') + '</ul>';
+    const hist = m.historia.filter((h) => (h.tacas || {})[pais]).slice(0, 8);
+    if (hist.length) html += '<h3 class="tr-h3">Vencedores anteriores</h3><ul class="tr-lista">' + hist.map((h) => '<li>' + h.ano + '/' + String(h.ano + 1).slice(2) + ': <b>' + esc(nomeClube(m, h.tacas[pais])) + '</b></li>').join('') + '</ul>';
     return html;
   }
+
 
   // ---------------------- Mercado ----------------------
   function vMercado(fonte) {
@@ -616,8 +659,8 @@
       corpo = '<p class="tr-ajuda">Os leilões fecham na próxima jornada: ganha o lance mais alto. Os clubes da IA também licitam. Toca num jogador para licitar.</p>' + corpo;
     } else if (S.mercado === 'procurar') {
       const f = S.filtro;
-      const todos = Object.values(m.jog).filter((j) => j.cl && j.cl !== c.id && (!f.pos || j.p === f.pos) && j.f >= (f.min || 0)).sort((a, b) => b.f - a.f).slice(0, 60);
-      corpo = '<div class="tr-filtros">' + ['', 'G', 'D', 'M', 'A'].map((p) => '<button class="tr-chip' + (f.pos === p ? ' ativo' : '') + '" data-acao="filtro-pos" data-p="' + p + '">' + (p ? POS_NOME[p] : 'Todos') + '</button>').join('') +
+      const todos = Object.values(m.jog).filter((j) => j.cl && j.cl !== c.id && (!f.pos || j.p === f.pos) && j.f >= (f.min || 0) && (!f.pais || m.clubes[j.cl].pais === f.pais)).sort((a, b) => b.f - a.f).slice(0, 60);
+      corpo = '<div class="tr-filtros">' + (multi(m) ? ['', ...m.paises].map((p) => '<button class="tr-chip' + ((f.pais || '') === p ? ' ativo' : '') + '" data-acao="filtro-pais" data-p="' + p + '">' + (p ? TM.PAISES[p].band : 'Todos os países') + '</button>').join('') + '<br>' : '') + ['', 'G', 'D', 'M', 'A'].map((p) => '<button class="tr-chip' + (f.pos === p ? ' ativo' : '') + '" data-acao="filtro-pos" data-p="' + p + '">' + (p ? POS_NOME[p] : 'Todos') + '</button>').join('') +
         '<label class="tr-sel inline"><span>Força mín.</span><select data-acao-change="filtro-min">' + [0, 30, 40, 50, 60, 70, 80].map((v) => '<option value="' + v + '"' + (f.min === v ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></label></div>' +
         '<table class="tr-tabela"><thead><tr><th></th><th>Jogador</th><th>Força</th><th class="m-esc">Caract.</th><th>Preço</th></tr></thead><tbody>' +
         todos.map((j) => linhaJ(j, '<td>' + (m.clubes[j.cl].hum ? '<small>treinador</small>' : eur(TM.precoPedido(m, j))) + '</td>')).join('') + '</tbody></table>';
@@ -635,7 +678,7 @@
   function vFinancas(fonte) {
     const m = fonte.mundo;
     const c = fonte.meu();
-    const D = TM.DIV[c.div];
+    const D = TM.econ(m, c.div);
     const sal = c.pl.reduce((s, id) => s + m.jog[id].sal, 0);
     const valorPl = c.pl.reduce((s, id) => s + TM.valor(m.jog[id]), 0);
     const uf = c.ultFin || {};
@@ -650,7 +693,7 @@
       '<h3 class="tr-h3">Última jornada</h3><ul class="tr-lista">' +
       '<li>Público em casa: <b>' + n0(c.ultPublico || 0) + '</b> de ' + n0(c.lug) + ' lugares</li>' +
       '<li>Bilheteira: <b class="ok">+' + eur(c.ultReceita || 0) + '</b></li>' +
-      '<li>Patrocínio: <b class="ok">+' + eur(uf.pat || 0) + '</b> (' + eur(D.patrocinio) + ' por jornada de liga na ' + TM.NOMES_DIV[c.div] + ')</li>' +
+      '<li>Patrocínio: <b class="ok">+' + eur(uf.pat || 0) + '</b> (' + eur(D.patrocinio) + ' por jornada de liga na ' + esc(nd(m, c.div)) + ')</li>' +
       '<li>Salários: <b class="neg">−' + eur(uf.sal || 0) + '</b></li>' +
       (uf.juros ? '<li>Juros: <b class="neg">−' + eur(uf.juros) + '</b></li>' : '') +
       '</ul>' +
@@ -658,7 +701,7 @@
       '<p class="tr-ajuda">Preço de referência na tua divisão: ' + D.bilhete + ' €. Mais caro dá mais por bilhete mas vem menos gente. O público também depende da força das duas equipas e da moral.</p>' +
       '<h3 class="tr-h3">Estádio</h3><p>' + n0(c.lug) + ' lugares' + (c.obras ? ' · <b>+' + n0(c.obras) + ' em obras</b> (prontos na próxima jornada)' : '') + '</p>' +
       '<div class="tr-form-linha"><label>Ampliar <select id="trObras">' + [1, 2, 3, 5, 10].map((n) => '<option value="' + n + '">' + n0(n * 1000) + ' lugares — ' + eur(n * TM.CUSTO_LUGARES) + '</option>').join('') + '</select></label><button class="tr-btn" data-acao="estadio"><i class="fas fa-helmet-safety"></i> Ampliar</button></div>' +
-      '<h3 class="tr-h3">Banco</h3><p>Podes pedir até <b>' + eur(D.credito) + '</b> na ' + TM.NOMES_DIV[c.div] + '. Os juros são cobrados todas as jornadas e o saldo negativo baixa a moral.</p>' +
+      '<h3 class="tr-h3">Banco</h3><p>Podes pedir até <b>' + eur(D.credito) + '</b> na ' + esc(nd(m, c.div)) + '. Os juros são cobrados todas as jornadas e o saldo negativo baixa a moral.</p>' +
       '<div class="tr-form-linha"><label>Montante (€) <input type="number" id="trEmp" min="0" step="50000" value="250000"></label><button class="tr-btn" data-acao="pedir">Pedir</button><button class="tr-btn2" data-acao="pagar"' + (c.emp ? '' : ' disabled') + '>Pagar</button></div>' +
       '</div>'
     );
@@ -675,10 +718,14 @@
       '<div class="tr-trein"><h3 class="tr-h3">O treinador</h3><ul class="tr-lista">' +
       '<li>Pontos de treinador: <b>' + (t.pts || 0) + '</b></li><li>Vitórias / empates / derrotas: <b>' + (t.v || 0) + ' / ' + (t.e || 0) + ' / ' + (t.d || 0) + '</b></li>' +
       '<li>Títulos: ' + ((t.titulos || []).length ? t.titulos.map((x) => '<b>🏆 ' + esc(x.t) + '</b> (' + esc(x.cl) + ', ' + x.ano + ')').join(', ') : '—') + '</li>' +
-      ((t.hist || []).length ? '<li>Percurso: ' + t.hist.slice(-8).map((h) => esc(h.cl) + ' ' + h.ano + (h.lugar ? ' (' + h.lugar + '.º, ' + TM.NOMES_DIV[h.div] + ')' : ' (despedido)')).join(' · ') + '</li>' : '') +
+      ((t.hist || []).length ? '<li>Percurso: ' + t.hist.slice(-8).map((h) => esc(h.cl) + ' ' + h.ano + (h.lugar ? ' (' + h.lugar + '.º, ' + esc(h.dn || nd(m, h.div)) + ')' : ' (despedido)')).join(' · ') + '</li>' : '') +
       '</ul>' + (fonte === Carreira ? '<button class="tr-link perigo" data-acao="nova-carreira"><i class="fas fa-rotate"></i> Começar carreira nova</button>' : '') + '</div>' +
       '<h3 class="tr-h3">Notícias</h3><ul class="tr-feed">' + minhas.map((n) => '<li class="' + (n.cl === c.id ? 'meu' : '') + '"><small>' + (n.e ? n.p != null ? 'Ép. ' + n.e : '' : '') + '</small>' + esc(n.txt) + '</li>').join('') + '</ul>' +
-      (m.historia.length ? '<h3 class="tr-h3">Épocas anteriores</h3><div class="tr-tabela-wrap"><table class="tr-tabela"><thead><tr><th>Época</th><th>1.ª Div.</th><th class="m-esc">2.ª</th><th class="m-esc">3.ª</th><th class="m-esc">4.ª</th><th>Taça</th></tr></thead><tbody>' + m.historia.slice(0, 15).map((h) => '<tr><td>' + h.ano + '/' + String(h.ano + 1).slice(2) + '</td>' + h.campeoes.map((id, k) => '<td' + (k ? ' class="m-esc"' : '') + '>' + esc(nomeClube(m, id)) + '</td>').join('') + '<td>' + esc(h.taca ? nomeClube(m, h.taca) : '—') + '</td></tr>').join('') + '</tbody></table></div>' : '') +
+      (m.historia.length ? (() => {
+        const ds = TM.divsDoPais(m, c.pais || 'PT');
+        return '<h3 class="tr-h3">Épocas anteriores' + (multi(m) ? ' — ' + esc(TM.PAISES[c.pais].nome) : '') + '</h3><div class="tr-tabela-wrap"><table class="tr-tabela"><thead><tr><th>Época</th>' + ds.map((d, k) => '<th' + (k ? ' class="m-esc"' : '') + '>' + esc(nd(m, d)) + '</th>').join('') + '<th>Taça</th></tr></thead><tbody>' +
+          m.historia.slice(0, 15).map((h) => '<tr><td>' + h.ano + '/' + String(h.ano + 1).slice(2) + '</td>' + ds.map((d, k) => '<td' + (k ? ' class="m-esc"' : '') + '>' + esc(h.campeoes[d] ? nomeClube(m, h.campeoes[d]) : '—') + '</td>').join('') + '<td>' + esc((h.tacas || {})[c.pais] ? nomeClube(m, h.tacas[c.pais]) : '—') + '</td></tr>').join('') + '</tbody></table></div>';
+      })() : '') +
       '</div>'
     );
   }
@@ -703,7 +750,13 @@
       c.banco = S.esc.banco;
     }
     S.esc = null;
-    const jogos = TM.prepararJornada(m);
+    let jogos = TM.prepararJornada(m);
+    // passos sem jogos (ronda de Taça que só existe noutros países) passam logo
+    let seguranca = 0;
+    while (!jogos.length && seguranca++ < 3) {
+      TM.concluirJornada(m, []);
+      jogos = TM.prepararJornada(m);
+    }
     const meuJ = jogos.find((j) => j.h.id === c.id || j.a.id === c.id) || null;
     S.aoVivo = {
       tipo: 'carreira',
@@ -956,11 +1009,16 @@
     let lista = '';
     if (outros.length) {
       if (outros[0].tipo === 'L') {
-        for (let d = 0; d < 4; d++) {
+        for (let d = 0; d < m.divs.length; d++) {
           const js = outros.filter((j) => j.div === d);
-          if (js.length) lista += '<h4>' + TM.NOMES_DIV[d] + '</h4>' + grupo(js);
+          if (js.length) lista += '<h4>' + esc(ndComPais(m, d)) + '</h4>' + grupo(js);
         }
-      } else lista = '<h4>Taça — ' + TM.RONDAS_TACA[outros[0].ronda] + '</h4>' + grupo(outros);
+      } else {
+        for (const pais of m.paises || ['PT']) {
+          const js = outros.filter((j) => (j.pais || 'PT') === pais);
+          if (js.length) lista += '<h4>Taça' + (multi(m) ? ' de ' + esc(TM.PAISES[pais].nome) : '') + ' — ' + esc(js[0].rn || '') + '</h4>' + grupo(js);
+        }
+      }
     }
     const subs = av.painelSubs && av.tipo === 'carreira' && meu && !av.fim ? painelSubs(av) : '';
     el.innerHTML =
@@ -1013,13 +1071,13 @@
   }
   function mostrarFimEpoca(m, c, antes) {
     const f = m.fimEpoca;
-    const subiu = c.div < antes.div;
-    const desceu = c.div > antes.div;
+    const subiu = TM.infoDiv(m, c.div).n < TM.infoDiv(m, antes.div).n;
+    const desceu = TM.infoDiv(m, c.div).n > TM.infoDiv(m, antes.div).n;
     modal(
       '<div class="tr-fimep"><h2>📅 Fim da época ' + f.ano + '/' + String(f.ano + 1).slice(2) + '</h2>' +
-      (subiu ? '<p class="tr-grande ok">⬆️ Subiste à ' + TM.NOMES_DIV[c.div] + '!</p>' : desceu ? '<p class="tr-grande neg">⬇️ Desceste à ' + TM.NOMES_DIV[c.div] + '.</p>' : '') +
-      '<ul class="tr-lista">' + f.campeoes.map((id, d) => '<li>🏆 ' + TM.NOMES_DIV[d] + ': <b>' + esc(nomeClube(m, id)) + '</b></li>').join('') +
-      (f.taca ? '<li>🏆 Taça: <b>' + esc(nomeClube(m, f.taca)) + '</b></li>' : '') +
+      (subiu ? '<p class="tr-grande ok">⬆️ Subiste à ' + esc(nd(m, c.div)) + '!</p>' : desceu ? '<p class="tr-grande neg">⬇️ Desceste à ' + esc(nd(m, c.div)) + '.</p>' : '') +
+      '<ul class="tr-lista">' + f.campeoes.map((id, d) => '<li>🏆 ' + esc(ndComPais(m, d)) + ': <b>' + esc(nomeClube(m, id)) + '</b></li>').join('') +
+      Object.entries(f.tacas || {}).filter(([, id]) => id).map(([p, id]) => '<li>🏆 Taça' + (multi(m) ? ' de ' + esc(TM.PAISES[p].nome) : '') + ': <b>' + esc(nomeClube(m, id)) + '</b></li>').join('') +
       (f.artilheiro ? '<li>👟 Melhor marcador: <b>' + esc(f.artilheiro.n) + '</b> (' + esc(nomeClube(m, f.artilheiro.cl)) + ', ' + f.artilheiro.gol + ' golos)</li>' : '') +
       '</ul><p class="tr-nota">Os jogadores ficaram um ano mais velhos, alguns reformaram-se e subiram juniores. Vê as Notícias.</p></div>'
     );
@@ -1067,7 +1125,7 @@
       const t = Liga.treinador();
       if (t && (t.ofertas || []).length) return renderOfertas(Liga);
       const humanos = Object.values(Liga.mundo.clubes).filter((x) => x.hum).length;
-      app().innerHTML = '<div class="tr-gate"><i class="fas fa-users"></i><h2>Liga ESTV</h2><p>Há <b>' + humanos + '</b> treinador(es) na liga. Entra e ficas com um clube livre da divisão mais baixa que tiver vaga, como no Elifoot.</p><p class="tr-nota">' + esc(TM.NOMES_DIV[0]) + ' a ' + esc(TM.NOMES_DIV[3]) + ' · jornadas às ' + esc(((Liga.info && Liga.info.horas) || []).join(' e ')) + '</p><button class="tr-btn-jogar grande" data-acao="entrar-liga"><i class="fas fa-handshake"></i> Entrar na liga</button></div>';
+      app().innerHTML = '<div class="tr-gate"><i class="fas fa-users"></i><h2>Liga ESTV</h2><p>Há <b>' + humanos + '</b> treinador(es) na liga. Entra e ficas com um clube livre da divisão mais baixa que tiver vaga, como no Elifoot.</p><p class="tr-nota">' + esc((Liga.mundo.paises || ['PT']).map((p) => TM.PAISES[p].band + ' ' + TM.PAISES[p].nome).join(' · ')) + ' · começas na 4.ª divisão portuguesa · jornadas às ' + esc(((Liga.info && Liga.info.horas) || []).join(' e ')) + '</p><button class="tr-btn-jogar grande" data-acao="entrar-liga"><i class="fas fa-handshake"></i> Entrar na liga</button></div>';
       return;
     }
     renderPainel(Liga);
@@ -1084,7 +1142,7 @@
     const meuId = Liga.meu() && Liga.meu().id;
     const jogos = u.jogos.map((x) => ({ tipo: x.tp, div: x.dv, ronda: x.r, h: { id: x.h }, a: { id: x.a }, gh: 0, ga: 0, min: 0, fim: false, ev: [], todos: x.ev, pen: null, penFinal: x.pen, posse: 0, ps: x.ps }));
     const meu = jogos.find((j) => j.h.id === meuId || j.a.id === meuId) || null;
-    S.aoVivo = { tipo: 'liga', m, jogos, meu, lado: meu ? (meu.h.id === meuId ? 'h' : 'a') : null, fim: false, titulo: u.t === 'L' ? 'Jornada ' + (u.r + 1) + ' — ao vivo' : 'Taça, ' + TM.RONDAS_TACA[u.r] + ' — ao vivo', inicio };
+    S.aoVivo = { tipo: 'liga', m, jogos, meu, lado: meu ? (meu.h.id === meuId ? 'h' : 'a') : null, fim: false, titulo: u.t === 'L' ? 'Jornada ' + (u.r + 1) + ' — ao vivo' : 'Taça — ao vivo', inicio };
     render();
     const passoReplay = () => {
       const av = S.aoVivo;
@@ -1129,9 +1187,9 @@
     const eu = d.eu;
     app().innerHTML =
       '<div class="tr-desafios">' +
-      (eu ? '<div class="tr-eu-card">' + emblema({ c: (eu.nome || '?').slice(0, 3).toUpperCase(), cor: eu.cor }, 'g') + '<div><b>' + esc(eu.nome) + '</b><small>O teu clube na Liga ESTV · ' + esc(TM.NOMES_DIV[eu.div] || '') + ' · força ' + eu.forca + ' · Elo ' + eu.elo + ' · ' + eu.v + 'V ' + eu.e + 'E ' + eu.d + 'D</small></div><small class="tr-nota">Hoje: ' + d.hoje + '/' + d.limite + ' desafios</small></div><p class="tr-ajuda">Os desafios usam o teu clube e a escalação que guardaste na Liga ESTV. Não mexem na tabela da liga, só no ranking de desafios.</p>' : '<div class="tr-gate pequeno"><p>Os desafios usam o teu clube da <b>Liga ESTV</b>. ' + (d.liga ? 'Entra na liga e ficas logo com um clube.' : 'A liga ainda não começou.') + '</p>' + (d.liga ? '<button class="tr-btn" data-acao="modo" data-modo="liga">Ir para a Liga ESTV</button>' : '') + '</div>') +
+      (eu ? '<div class="tr-eu-card">' + emblema({ c: (eu.nome || '?').slice(0, 3).toUpperCase(), cor: eu.cor }, 'g') + '<div><b>' + esc(eu.nome) + '</b><small>O teu clube na Liga ESTV · ' + esc(eu.dn || '') + ' · força ' + eu.forca + ' · Elo ' + eu.elo + ' · ' + eu.v + 'V ' + eu.e + 'E ' + eu.d + 'D</small></div><small class="tr-nota">Hoje: ' + d.hoje + '/' + d.limite + ' desafios</small></div><p class="tr-ajuda">Os desafios usam o teu clube e a escalação que guardaste na Liga ESTV. Não mexem na tabela da liga, só no ranking de desafios.</p>' : '<div class="tr-gate pequeno"><p>Os desafios usam o teu clube da <b>Liga ESTV</b>. ' + (d.liga ? 'Entra na liga e ficas logo com um clube.' : 'A liga ainda não começou.') + '</p>' + (d.liga ? '<button class="tr-btn" data-acao="modo" data-modo="liga">Ir para a Liga ESTV</button>' : '') + '</div>') +
       '<h3 class="tr-h3">Adversários</h3><div class="tr-tabela-wrap"><table class="tr-tabela"><thead><tr><th>Treinador</th><th>Equipa</th><th>Elo</th><th class="m-esc">Força</th><th></th></tr></thead><tbody>' +
-      (d.lista.length ? d.lista.map((x) => '<tr><td><b>' + esc(x.nomeT) + '</b></td><td>' + esc(x.nome) + '<small>' + esc(TM.NOMES_DIV[x.div] || '') + '</small></td><td>' + x.elo + '</td><td class="m-esc">' + x.forca + '</td><td>' + (eu ? '<button class="tr-btn" data-acao="desafiar" data-login="' + esc(x.login) + '"><i class="fas fa-bolt"></i> Desafiar</button>' : '') + '</td></tr>').join('') : '<tr><td colspan="5">Ainda não há outros treinadores na Liga ESTV. Partilha o jogo no chat!</td></tr>') +
+      (d.lista.length ? d.lista.map((x) => '<tr><td><b>' + esc(x.nomeT) + '</b></td><td>' + esc(x.nome) + '<small>' + esc(x.dn || '') + '</small></td><td>' + x.elo + '</td><td class="m-esc">' + x.forca + '</td><td>' + (eu ? '<button class="tr-btn" data-acao="desafiar" data-login="' + esc(x.login) + '"><i class="fas fa-bolt"></i> Desafiar</button>' : '') + '</td></tr>').join('') : '<tr><td colspan="5">Ainda não há outros treinadores na Liga ESTV. Partilha o jogo no chat!</td></tr>') +
       '</tbody></table></div>' +
       '<h3 class="tr-h3">Últimos desafios</h3><ul class="tr-feed">' + (d.historico.length ? d.historico.map((h) => '<li><small>' + new Date(h.ts).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + '</small><b>' + esc(h.a) + '</b> ' + h.ga + ' - ' + h.gb + ' <b>' + esc(h.b) + '</b>' + (h.pen ? ' (pen. ' + h.pen[0] + '-' + h.pen[1] + ')' : '') + '</li>').join('') : '<li>Ainda sem desafios.</li>') + '</ul></div>';
   }
@@ -1206,6 +1264,9 @@
       case 'login': if (tw()) tw().login(); return;
       case 'modo': S.modo = b.dataset.modo; render(); return;
       case 'outros-clubes': S.semente = null; renderInicio(); return;
+      case 'pais-inicio': S.paisInicio = b.dataset.p || null; S.semente = null; renderInicio(); return;
+      case 'pais-taca': S.pTaca = b.dataset.p; renderVista(fonte); return;
+      case 'filtro-pais': S.filtro.pais = b.dataset.p; renderVista(fonte); return;
       case 'escolher-clube': {
         const m = S.preview;
         Carreira.mundo = m;
@@ -1224,6 +1285,7 @@
         Carreira.mundo = null;
         fecharModal();
         S.semente = null;
+        S.paisInicio = null;
         render();
         return;
       case 'assumir':
@@ -1235,7 +1297,7 @@
       case 'ver-convites': {
         const m = fonte.mundo;
         const t = fonte.treinador();
-        modal('<h3>Convites</h3><p>Estes clubes querem-te como treinador. Se aceitares, deixas o clube atual.</p><div class="tr-ofertas">' + t.ofertas.filter((x) => m.clubes[x] && !m.clubes[x].hum).map((x) => '<button class="tr-oferta" data-acao="assumir" data-id="' + x + '">' + emblema(m.clubes[x], 'g') + '<span class="tr-oferta-nome">' + esc(m.clubes[x].n) + '</span><span class="tr-oferta-info">' + TM.NOMES_DIV[m.clubes[x].div] + ' · ' + eur(m.clubes[x].din) + '</span></button>').join('') + '</div><button class="tr-link" data-acao="recusar-convites">Recusar todos</button>');
+        modal('<h3>Convites</h3><p>Estes clubes querem-te como treinador. Se aceitares, deixas o clube atual.</p><div class="tr-ofertas">' + t.ofertas.filter((x) => m.clubes[x] && !m.clubes[x].hum).map((x) => '<button class="tr-oferta" data-acao="assumir" data-id="' + x + '">' + emblema(m.clubes[x], 'g') + '<span class="tr-oferta-nome">' + esc(m.clubes[x].n) + '</span><span class="tr-oferta-info">' + ndComPais(m, m.clubes[x].div) + ' · ' + eur(m.clubes[x].din) + '</span></button>').join('') + '</div><button class="tr-link" data-acao="recusar-convites">Recusar todos</button>');
         return;
       }
       case 'recusar-convites':
@@ -1518,6 +1580,7 @@
     if (!token()) return;
     try {
       const d = await api('carreira');
+      if (d && d.mundo) TM.migrar(d.mundo);
       if (d && d.mundo && d.mundo.v === TM.VERSAO && (!Carreira.mundo || (d.ts || 0) > (Carreira.atualizado || 0))) {
         if (!Carreira.mundo || confirm('Encontrei uma carreira mais recente na tua conta (' + d.mundo.ano + '/' + String(d.mundo.ano + 1).slice(2) + '). Queres continuar essa?')) {
           Carreira.mundo = d.mundo;

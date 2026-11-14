@@ -21,7 +21,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSAO = 1;
+  const VERSAO = 2;
 
   // ---------------------------------------------------------------
   // Aleatório com semente (mulberry32): o estado é um número, guarda-se
@@ -120,8 +120,106 @@
     ['Amorra FC', 'AMO', '#1d4f9c', '#ffffff', 2500, 37],
     ['Atlétyco CP', 'ATL', '#1d63c4', '#ffd100', 3000, 36],
   ];
-  const NOMES_DIV = ['1.ª Divisão', '2.ª Divisão', '3.ª Divisão', '4.ª Divisão'];
+  // Espanha, Itália e Inglaterra: 2 divisões de 10 (nomes alterados)
+  const CLUBES_ES = [
+    ['Real Madrida', 'RMA', '#ffffff', '#febe10', 81000, 82],
+    ['FC Barcelonna', 'BAR', '#a50044', '#004d98', 99000, 82],
+    ['Atlético Madrill', 'ATM', '#cb3524', '#ffffff', 70000, 79],
+    ['Athletic Bilbau', 'ATH', '#ee2523', '#ffffff', 53000, 72],
+    ['Real Sociedadd', 'RSO', '#0067b1', '#ffffff', 39000, 71],
+    ['Villarreall', 'VIL', '#ffe667', '#005187', 23000, 71],
+    ['Real Bétys', 'BET', '#00954c', '#ffffff', 60000, 70],
+    ['Sevilha FC', 'SEV', '#ffffff', '#d4001f', 43000, 69],
+    ['Valência CF', 'VAL', '#ffffff', '#ee3524', 49000, 67],
+    ['Celtta Vigo', 'CEL', '#8ac3ee', '#ffffff', 29000, 66],
+    ['Gyrona FC', 'GIR', '#cd2534', '#ffffff', 14000, 62],
+    ['Osassuna', 'OSA', '#d91a21', '#0a346f', 23000, 61],
+    ['Getaffe', 'GET', '#005999', '#ffffff', 17000, 60],
+    ['RCD Mallorka', 'MLL', '#e20613', '#111111', 23000, 60],
+    ['Rayo Vallecanno', 'RAY', '#ffffff', '#e53027', 14000, 59],
+    ['Espanyoll', 'ESP', '#007fc8', '#ffffff', 40000, 59],
+    ['Deportivo Alavéss', 'ALA', '#0d47a1', '#ffffff', 19000, 58],
+    ['UD Las Palmass', 'LPA', '#ffe400', '#0055a4', 32000, 57],
+    ['CD Leganéss', 'LEG', '#ffffff', '#1e4fa3', 12000, 56],
+    ['Real Valladollid', 'VLL', '#5f259f', '#ffffff', 26000, 55],
+  ];
+  const CLUBES_IT = [
+    ['Internazionalle', 'INT', '#0068a8', '#111111', 75000, 82],
+    ['Juventuss', 'JUV', '#ffffff', '#111111', 41000, 80],
+    ['AC Millan', 'MIL', '#fb090b', '#111111', 75000, 79],
+    ['SSC Nápolis', 'NAP', '#12a0d7', '#ffffff', 54000, 79],
+    ['Atalantta', 'ATA', '#1e71b8', '#111111', 24000, 76],
+    ['AS Romma', 'ROM', '#8e1f2f', '#f0bc42', 70000, 75],
+    ['SS Lazzio', 'LAZ', '#87d8f7', '#ffffff', 70000, 74],
+    ['Fiorentinna', 'FIO', '#482e92', '#ffffff', 43000, 72],
+    ['Bolonha FC', 'BOL', '#a21c26', '#1a2f48', 36000, 71],
+    ['Torinno FC', 'TRN', '#8a1e03', '#ffffff', 28000, 67],
+    ['Udinesse', 'UDI', '#ffffff', '#111111', 25000, 63],
+    ['Génova CFC', 'GEN', '#ad1919', '#1a2f48', 36000, 62],
+    ['Comma 1907', 'COM', '#003a70', '#ffffff', 13000, 62],
+    ['Cagliarri', 'CAG', '#ac0e1d', '#002350', 16000, 60],
+    ['Parmma', 'PAR', '#ffd200', '#1a3c8c', 22000, 59],
+    ['US Lecci', 'LEC', '#ffd700', '#d0021b', 31000, 59],
+    ['Empolli', 'EMP', '#0057a8', '#ffffff', 16000, 58],
+    ['Hellas Veronna', 'VER', '#ffd700', '#00285e', 31000, 58],
+    ['Sassuollo', 'SAS', '#00a752', '#111111', 21000, 57],
+    ['Sampdorya', 'SAM', '#1b4f9c', '#ffffff', 33000, 56],
+  ];
+  const CLUBES_EN = [
+    ['Manchester Cityy', 'MCI', '#6cabdd', '#ffffff', 53000, 84],
+    ['Liverpoool', 'LIV', '#c8102e', '#ffffff', 61000, 83],
+    ['Arsenall', 'ARS', '#ef0107', '#ffffff', 60000, 83],
+    ['Chelsy FC', 'CHE', '#034694', '#ffffff', 40000, 79],
+    ['Manchester Unitedd', 'MUN', '#da291c', '#111111', 74000, 77],
+    ['Tottenhamm', 'TOT', '#ffffff', '#132257', 62000, 76],
+    ['Newcastel', 'NEW', '#241f20', '#ffffff', 52000, 76],
+    ['Aston Villla', 'AVL', '#670e36', '#95bfe5', 42000, 76],
+    ['Brightonn', 'BHA', '#0057b8', '#ffffff', 31000, 72],
+    ['West Hamm', 'WHU', '#7a263a', '#1bb1e7', 62000, 70],
+    ['Crystall Palace', 'CRY', '#1b458f', '#c4122e', 25000, 69],
+    ['Nottingham Forrest', 'NFO', '#dd0000', '#ffffff', 30000, 69],
+    ['Bornemouth', 'BOU', '#da291c', '#111111', 11000, 69],
+    ['Evertonn', 'EVE', '#003399', '#ffffff', 52000, 68],
+    ['Fullham', 'FUL', '#ffffff', '#111111', 29000, 68],
+    ['Brentforde', 'BRE', '#e30613', '#ffffff', 17000, 67],
+    ['Wolverhamptonn', 'WOL', '#fdb913', '#231f20', 31000, 66],
+    ['Leeds Unitted', 'LEE', '#ffffff', '#1d428a', 37000, 64],
+    ['Burnlei', 'BUR', '#6c1d45', '#99d6ea', 21000, 63],
+    ['Sunderlandd', 'SUN', '#eb172b', '#ffffff', 49000, 63],
+  ];
+  // ec = multiplicador do dinheiro (bilhetes, patrocínios, prémios)
+  const PAISES = {
+    PT: { nome: 'Portugal', band: '🇵🇹', clubes: CLUBES, ec: 1, divs: ['1.ª Divisão', '2.ª Divisão', '3.ª Divisão', '4.ª Divisão'] },
+    ES: { nome: 'Espanha', band: '🇪🇸', clubes: CLUBES_ES, ec: 1.7, divs: ['1.ª Divisão espanhola', '2.ª Divisão espanhola'] },
+    IT: { nome: 'Itália', band: '🇮🇹', clubes: CLUBES_IT, ec: 1.6, divs: ['1.ª Divisão italiana', '2.ª Divisão italiana'] },
+    EN: { nome: 'Inglaterra', band: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', clubes: CLUBES_EN, ec: 2.6, divs: ['1.ª Divisão inglesa', '2.ª Divisão inglesa'] },
+  };
+  const NOMES_DIV = PAISES.PT.divs;
   const POR_DIV = 10;
+  // nome e economia de uma divisão (índice global em m.divs)
+  function infoDiv(m, d) {
+    return (m.dinfo && m.dinfo[d]) || { p: 'PT', n: d };
+  }
+  function nomeDiv(m, d) {
+    const i = infoDiv(m, d);
+    return (PAISES[i.p] || PAISES.PT).divs[i.n] || 'Divisão';
+  }
+  function econ(m, d) {
+    const i = infoDiv(m, d);
+    const base = DIV[Math.min(3, i.n)];
+    const k = (PAISES[i.p] || PAISES.PT).ec;
+    return {
+      publico: base.publico * (k > 1 ? 1.6 : 1),
+      bilhete: Math.round(base.bilhete * (k > 1 ? 1 + (k - 1) * 0.6 : 1)),
+      patrocinio: Math.round(base.patrocinio * k),
+      credito: Math.round(base.credito * k),
+      premio: Math.round(base.premio * k),
+      dinheiro: Math.round(base.dinheiro * k),
+    };
+  }
+  function divsDoPais(m, pais) {
+    return (m.dinfo || []).map((x, d) => ({ d, n: x.n, p: x.p })).filter((x) => x.p === pais).sort((a, b) => a.n - b.n).map((x) => x.d);
+  }
 
   // valores por divisão: público base, bilhete de referência, patrocínio por
   // jornada, limite de empréstimo, prémio de campeão
@@ -186,8 +284,22 @@
       a: 'Petrović Jovanović Nikolić Marković Đorđević Stanković Ilić Pavlović'.split(' '),
     },
   };
-  const NACS = ['PT', 'BR', 'ES', 'AR', 'CV', 'AO', 'FR', 'SN', 'UY', 'RS'];
-  const PESOS_NAC = [70, 11, 3, 3, 3, 3, 2, 2, 2, 1];
+  N.IT = {
+    p: 'Marco Luca Alessandro Lorenzo Matteo Davide Federico Andrea Riccardo Simone Nicolò Gianluca Stefano Francesco Giorgio Daniele Paolo Fabio Mattia Tommaso'.split(' '),
+    a: 'Rossi Russo Ferrari Esposito Bianchi Romano Colombo Ricci Marino Greco Bruno Gallo Conti De Luca Mancini Costa Giordano Rizzo Lombardi Moretti Barbieri Fontana Santoro Mariani Rinaldi Caruso Ferrara Galli Martini Leone'.split(' '),
+  };
+  N.EN = {
+    p: 'Harry Jack Oliver George Charlie Jacob Thomas James Joshua William Callum Mason Kyle Declan Jordan Reece Marcus Phil Ben Luke Aaron Jamie Conor Ollie'.split(' '),
+    a: 'Smith Jones Taylor Brown Williams Wilson Johnson Davies Robinson Wright Thompson Evans Walker White Roberts Green Hall Wood Jackson Clarke Hughes Edwards Turner Hill Ward Morris Cooper Barnes Shaw Palmer'.split(' '),
+  };
+  const NACS = ['PT', 'BR', 'ES', 'AR', 'CV', 'AO', 'FR', 'SN', 'UY', 'RS', 'IT', 'EN'];
+  const PESOS_NAC = [70, 11, 3, 3, 3, 3, 2, 2, 2, 1, 1, 1];
+  const PESOS_PAIS = {
+    PT: PESOS_NAC,
+    ES: [3, 6, 62, 6, 1, 1, 5, 3, 3, 2, 3, 3],
+    IT: [3, 7, 3, 7, 1, 1, 6, 4, 3, 4, 58, 3],
+    EN: [4, 6, 5, 4, 1, 1, 7, 6, 2, 2, 2, 60],
+  };
 
   function gerarNome(rng, nac) {
     const L = N[nac] || N.PT;
@@ -252,7 +364,7 @@
   // ---------------------------------------------------------------
   function novoJogador(m, rng, pos, nivel, idade, extra) {
     const id = 'j' + m.prox++;
-    const nac = rng.peso(NACS, PESOS_NAC);
+    const nac = rng.peso(NACS, PESOS_PAIS[(extra && extra.pais) || 'PT'] || PESOS_NAC);
     const [lista, pesos] = CAR_POS[pos];
     const ca = [];
     const nCar = rng.chance(0.15) ? 1 : 2;
@@ -296,11 +408,13 @@
       passo: 0, // índice em m.cal
       clubes: {},
       jog: {},
-      divs: [[], [], [], []],
+      paises: [],
+      divs: [],
+      dinfo: [],
       tab: {},
       fix: [],
       cal: [],
-      taca: null,
+      tacas: {},
       mercado: { leiloes: [], livres: [] },
       noticias: [],
       historia: [],
@@ -309,20 +423,34 @@
       opc: Object.assign({ multi: false }, opcoes || {}),
     };
     const { rng, guardar } = rngDoMundo(m);
-    CLUBES.forEach((c, idx) => {
-      const div = Math.floor(idx / POR_DIV);
+    const lista = ((opcoes && opcoes.paises) || ['PT']).filter((p) => PAISES[p]);
+    if (!lista.length) lista.push('PT');
+    m.paises = lista;
+    for (const pais of lista) {
+      const P0 = PAISES[pais];
+      P0.divs.forEach((_, n) => {
+        m.divs.push([]);
+        m.dinfo.push({ p: pais, n });
+      });
+    }
+    const todos = [];
+    for (const pais of lista) PAISES[pais].clubes.forEach((c, idx) => todos.push({ c, pais, n: Math.floor(idx / POR_DIV) }));
+    todos.forEach(({ c, pais, n }) => {
+      const div = m.dinfo.findIndex((x) => x.p === pais && x.n === n);
       const id = c[1];
+      const ec = econ(m, div);
       const cl = {
         id,
         n: c[0],
         c: c[1],
         cor: [c[2], c[3]],
+        pais,
         div,
         nivel: c[5],
-        lug: Math.min(c[4], div === 0 ? c[4] : div === 1 ? Math.min(c[4], 15000) : div === 2 ? Math.min(c[4], 8000) : Math.min(c[4], 5000)),
+        lug: pais !== 'PT' ? c[4] : Math.min(c[4], n === 0 ? c[4] : n === 1 ? 15000 : n === 2 ? 8000 : 5000),
         obras: 0,
-        bil: DIV[div].bilhete,
-        din: Math.round(DIV[div].dinheiro * (c[5] >= 70 ? 2.5 : 1)),
+        bil: ec.bilhete,
+        din: Math.round(ec.dinheiro * (c[5] >= 70 ? 2.5 : 1)),
         emp: 0,
         mor: 10,
         pl: [],
@@ -336,7 +464,7 @@
       const plano = [['G', 3], ['D', 8], ['M', 7], ['A', 5]];
       for (const [pos, n] of plano) {
         for (let k = 0; k < n; k++) {
-          const j = novoJogador(m, rng, pos, c[5]);
+          const j = novoJogador(m, rng, pos, c[5], null, { pais });
           j.cl = id;
           cl.pl.push(j.id);
         }
@@ -348,6 +476,32 @@
     }
     novaEpoca(m, rng);
     guardar();
+    return m;
+  }
+
+  // ---------------------------------------------------------------
+  // Carreiras antigas (versão 1, só Portugal) passam para a versão 2
+  // ---------------------------------------------------------------
+  function migrar(m) {
+    if (!m || m.v === VERSAO) return m;
+    if (m.v === 1) {
+      m.paises = ['PT'];
+      m.dinfo = m.divs.map((_, n) => ({ p: 'PT', n }));
+      for (const id in m.clubes) m.clubes[id].pais = 'PT';
+      const t = m.taca || { vivos: [], isentos: [], ronda: 0, jogos: [] };
+      const feitas = t.ronda || 0;
+      let vivos = t.vivos || [];
+      let isentos = t.isentos || [];
+      if (feitas >= 1 && isentos.length) {
+        vivos = vivos.concat(isentos);
+        isentos = [];
+      }
+      m.tacas = { PT: { pais: 'PT', vivos, isentos, pre: true, inicio: 0, feitas, campeao: t.campeao || null, finalista: t.finalista || null, jogos: (t.jogos || []).map((j) => Object.assign({ rn: RONDAS_TACA[j.r] }, j)) } };
+      delete m.taca;
+      for (const h of m.historia || []) if (!h.tacas) h.tacas = { PT: h.taca || null };
+      if (m.ultimos && m.ultimos.jogos) for (const j of m.ultimos.jogos) if (j.tp === 'T') { j.pa = 'PT'; j.rn = RONDAS_TACA[j.r]; }
+      m.v = 2;
+    }
     return m;
   }
 
@@ -377,6 +531,11 @@
   }
 
   const RONDAS_TACA = ['Pré-eliminatória', '16 avos', 'Oitavos', 'Quartos', 'Meias-finais', 'Final'];
+  function nomeRonda(tc) {
+    if (tc.pre && tc.feitas === 0) return 'Pré-eliminatória';
+    const n = tc.vivos.length;
+    return n <= 2 ? 'Final' : n <= 4 ? 'Meias-finais' : n <= 8 ? 'Quartos' : n <= 16 ? 'Oitavos' : '16 avos';
+  }
 
   function novaEpoca(m, rng) {
     m.fix = m.divs.map((ids) => calendarioLiga(ids, rng));
@@ -391,11 +550,21 @@
     }
     m.cal = cal;
     m.passo = 0;
-    // Taça: os 10 da 4.ª + 6 da 3.ª jogam a pré-eliminatória
-    const d3 = m.divs[2].slice().sort(() => rng.r() - 0.5);
-    const pre = m.divs[3].concat(d3.slice(0, 6));
-    const isentos = m.divs[0].concat(m.divs[1], d3.slice(6));
-    m.taca = { vivos: pre.slice(), isentos, ronda: 0, campeao: null, finalista: null, jogos: [] };
+    // Taça de cada país: se não forem potência de 2, os das divisões mais
+    // baixas jogam uma pré-eliminatória. A final calha sempre na última ronda.
+    m.tacas = {};
+    for (const pais of m.paises || ['PT']) {
+      const ordem = divsDoPais(m, pais).map((d) => m.divs[d].slice().sort(() => rng.r() - 0.5));
+      const todos = [].concat(...ordem);
+      const N = todos.length;
+      let P = 1;
+      while (P * 2 <= N) P *= 2;
+      const nPre = P === N ? 0 : 2 * (N - P);
+      const pre = nPre ? todos.slice(N - nPre) : [];
+      const isentos = nPre ? todos.slice(0, N - nPre) : [];
+      const rondas = (nPre ? 1 : 0) + Math.round(Math.log2(P));
+      m.tacas[pais] = { pais, vivos: nPre ? pre : todos, isentos, pre: !!nPre, inicio: Math.max(0, 6 - rondas), feitas: 0, campeao: null, finalista: null, jogos: [] };
+    }
     for (const id in m.jog) {
       const j = m.jog[id];
       j.gol = 0;
@@ -413,17 +582,20 @@
       });
       return out;
     }
-    // Taça: sorteio da ronda
-    const tc = m.taca;
-    let vivos = tc.vivos.slice();
-    if (p.r === 1) vivos = vivos.concat(tc.isentos);
-    for (let i = vivos.length - 1; i > 0; i--) {
-      const k = Math.floor(rng.r() * (i + 1));
-      [vivos[i], vivos[k]] = [vivos[k], vivos[i]];
-    }
+    // Taças: sorteio da ronda em cada país
     const out = [];
-    for (let i = 0; i + 1 < vivos.length; i += 2) {
-      out.push({ h: vivos[i], a: vivos[i + 1], tipo: 'T', ronda: p.r, neutro: p.r === 5 });
+    for (const pais in m.tacas) {
+      const tc = m.tacas[pais];
+      if (tc.campeao || p.r < tc.inicio) continue;
+      const vivos = tc.vivos.slice();
+      for (let i = vivos.length - 1; i > 0; i--) {
+        const k = Math.floor(rng.r() * (i + 1));
+        [vivos[i], vivos[k]] = [vivos[k], vivos[i]];
+      }
+      const nome = nomeRonda(tc);
+      for (let i = 0; i + 1 < vivos.length; i += 2) {
+        out.push({ h: vivos[i], a: vivos[i + 1], tipo: 'T', ronda: p.r, pais, rn: nome, neutro: vivos.length === 2 });
+      }
     }
     return out;
   }
@@ -565,6 +737,8 @@
       tipo: info.tipo,
       div: info.div,
       ronda: info.ronda,
+      pais: info.pais,
+      rn: info.rn,
       neutro: !!info.neutro,
       h: lado(info.h, escH),
       a: lado(info.a, escA),
@@ -1018,10 +1192,11 @@
         return top.reduce((s, x) => s + x, 0) / Math.max(1, top.length);
       };
       const fm = (forcaMedia(ch) + forcaMedia(ca)) / 2;
-      const dv = DIV[ch.div];
-      const ref = CLUBES.slice(ch.div * POR_DIV, ch.div * POR_DIV + POR_DIV).reduce((s, c) => s + c[5], 0) / POR_DIV;
+      const dv = econ(m, ch.div);
+      const membros = m.divs[ch.div] || [ch.id];
+      const ref = membros.reduce((s, id) => s + (m.clubes[id].nivel || 50), 0) / membros.length;
       const fatorPreco = Math.pow(dv.bilhete / Math.max(1, ch.bil), 1.25);
-      let publico = dv.publico * Math.pow(fm / ref, 1.6) * (0.75 + ch.mor / 40) * fatorPreco * (jg.tipo === 'T' ? 1 + jg.ronda * 0.15 : 1);
+      let publico = dv.publico * Math.pow(fm / ref, 1.6) * (0.75 + ch.mor / 40) * fatorPreco * (jg.tipo === 'T' ? 1 + (jg.neutro ? 0.8 : 0.1) : 1);
       publico = Math.round(clamp(publico * (0.9 + rng.r() * 0.2), 200, ch.lug));
       const receita = publico * ch.bil;
       if (jg.tipo === 'T' && !jg.neutro) {
@@ -1079,12 +1254,15 @@
       }
       if (jg.tipo === 'T') {
         const perdedor = venc === ch.id ? ca.id : ch.id;
-        m.taca.jogos.push({ r: jg.ronda, h: ch.id, a: ca.id, gh: jg.gh, ga: jg.ga, pen: jg.pen, x: perdedor });
+        const tc = m.tacas[jg.pais];
+        if (tc) tc.jogos.push({ r: jg.ronda, rn: jg.rn, h: ch.id, a: ca.id, gh: jg.gh, ga: jg.ga, pen: jg.pen, x: perdedor });
       }
       resumo.jogos.push({
         tp: jg.tipo,
         dv: jg.div,
         r: jg.ronda,
+        pa: jg.pais,
+        rn: jg.rn,
         h: ch.id,
         a: ca.id,
         gh: jg.gh,
@@ -1095,27 +1273,30 @@
         ev: jg.ev,
       });
     }
-    // na ronda 1 da Taça os isentos juntam-se aos vivos
+    // Taças: os vencedores passam; depois da pré-eliminatória juntam-se os isentos
     if (p.t === 'T') {
-      const vencedores = resumo.jogos.map((x) => {
-        const jg = jogos.find((j) => j.h.id === x.h && j.a.id === x.a);
-        return vencedor(jg);
-      });
-      m.taca.vivos = vencedores;
-      if (p.r >= 1) m.taca.isentos = [];
-      m.taca.ronda = p.r + 1;
-      if (p.r === 5) {
-        const fin = resumo.jogos[0];
-        m.taca.campeao = vencedores[0];
-        m.taca.finalista = fin.h === vencedores[0] ? fin.a : fin.h;
-        const c = m.clubes[m.taca.campeao];
-        c.din += PREMIO_TACA;
-        m.clubes[m.taca.finalista].din += Math.round(PREMIO_TACA / 3);
-        noticia(m, '🏆 ' + c.n + ' ganha a Taça!', c.id);
-        if (c.hum) {
-          const t = treinadorDe(m, c.hum);
-          t.pts += 15;
-          t.titulos.push({ e: m.epoca, ano: m.ano, t: 'Taça', cl: c.n });
+      for (const pais in m.tacas) {
+        const tc = m.tacas[pais];
+        const meus = jogos.filter((j) => j.pais === pais);
+        if (!meus.length) continue;
+        const vencedores = meus.map(vencedor);
+        tc.vivos = vencedores.concat(tc.isentos || []);
+        tc.isentos = [];
+        tc.feitas++;
+        if (vencedores.length === 1) {
+          const fin = meus[0];
+          tc.campeao = vencedores[0];
+          tc.finalista = fin.h.id === vencedores[0] ? fin.a.id : fin.h.id;
+          const c = m.clubes[tc.campeao];
+          const premio = Math.round(PREMIO_TACA * (PAISES[pais] || PAISES.PT).ec);
+          c.din += premio;
+          m.clubes[tc.finalista].din += Math.round(premio / 3);
+          noticia(m, '🏆 ' + c.n + ' ganha a Taça' + (m.paises.length > 1 ? ' de ' + PAISES[pais].nome : '') + '!', c.id);
+          if (c.hum) {
+            const t = treinadorDe(m, c.hum);
+            t.pts += 15;
+            t.titulos.push({ e: m.epoca, ano: m.ano, t: 'Taça' + (m.paises.length > 1 ? ' de ' + PAISES[pais].nome : ''), cl: c.n });
+          }
         }
       }
     }
@@ -1124,7 +1305,7 @@
     for (const id in m.clubes) {
       const c = m.clubes[id];
       const sal = c.pl.reduce((s, jid) => s + m.jog[jid].sal, 0);
-      const pat = p.t === 'L' ? DIV[c.div].patrocinio : 0;
+      const pat = p.t === 'L' ? econ(m, c.div).patrocinio : 0;
       const juros = Math.round(c.emp * JURO);
       c.din += pat - (p.t === 'L' ? sal : 0) - juros;
       c.ultFin = { sal: p.t === 'L' ? sal : 0, pat, juros };
@@ -1136,8 +1317,9 @@
       if (c.din < 0) c.mor = clamp(c.mor - 1, 0, 20);
       // a IA paga dívidas e pede crédito se precisar
       if (!c.hum) {
-        if (c.din < -DIV[c.div].credito * 0.2 && c.emp < DIV[c.div].credito) {
-          const x = Math.min(DIV[c.div].credito - c.emp, -c.din + 200000);
+        const cred = econ(m, c.div).credito;
+        if (c.din < -cred * 0.2 && c.emp < cred) {
+          const x = Math.min(cred - c.emp, -c.din + 200000);
           c.emp += x;
           c.din += x;
         } else if (c.emp > 0 && c.din > c.emp * 1.5) {
@@ -1206,7 +1388,7 @@
     const c = m.clubes[clubeId];
     const v = Math.round(Number(montante) || 0);
     if (v < l.base) return { erro: 'O lance mínimo é ' + fmtEur(l.base) + '.' };
-    if (v > c.din + DIV[c.div].credito - c.emp) return { erro: 'Não tens dinheiro (nem crédito) para esse lance.' };
+    if (v > c.din + econ(m, c.div).credito - c.emp) return { erro: 'Não tens dinheiro (nem crédito) para esse lance.' };
     if (c.pl.length >= MAX_PLANTEL) return { erro: 'O teu plantel está cheio (' + MAX_PLANTEL + ').' };
     l.lances[clubeId] = v;
     return { ok: true };
@@ -1253,7 +1435,7 @@
         const v = l.lances[cid];
         const c = m.clubes[cid];
         if (!c || c.pl.length >= MAX_PLANTEL) continue;
-        if (v > c.din + DIV[c.div].credito - c.emp) continue;
+        if (v > c.din + econ(m, c.div).credito - c.emp) continue;
         if (!best || v > best.v) best = { cid, v };
       }
       if (best) {
@@ -1349,14 +1531,14 @@
         transferir(m, melhor.id, c.id, 0, null);
       }
       while (c.pl.length < 18) {
-        const j = novoJogador(m, rng, rng.peso(['G', 'D', 'M', 'A'], [1, 3, 3, 3]), c.nivel - 8, rng.int(18, 30));
+        const j = novoJogador(m, rng, rng.peso(['G', 'D', 'M', 'A'], [1, 3, 3, 3]), c.nivel - 8, rng.int(18, 30), { pais: c.pais });
         j.cl = c.id;
         c.pl.push(j.id);
       }
       // garante 2 guarda-redes
       const grs = c.pl.filter((x) => m.jog[x].p === 'G').length;
       if (grs < 2) {
-        const j = novoJogador(m, rng, 'G', c.nivel - 5, rng.int(19, 32));
+        const j = novoJogador(m, rng, 'G', c.nivel - 5, rng.int(19, 32), { pais: c.pais });
         j.cl = c.id;
         c.pl.push(j.id);
       }
@@ -1384,14 +1566,14 @@
   }
   function definirBilhete(m, clubeId, preco) {
     const c = m.clubes[clubeId];
-    c.bil = clamp(Math.round(Number(preco) || DIV[c.div].bilhete), 1, 150);
+    c.bil = clamp(Math.round(Number(preco) || econ(m, c.div).bilhete), 1, 250);
     return { ok: true, bil: c.bil };
   }
   function emprestimo(m, clubeId, montante) {
     const c = m.clubes[clubeId];
     const v = Math.round(Number(montante) || 0);
     if (v > 0) {
-      const lim = DIV[c.div].credito - c.emp;
+      const lim = econ(m, c.div).credito - c.emp;
       if (v > lim) return { erro: 'O banco só te empresta mais ' + fmtEur(Math.max(0, lim)) + '.' };
       c.emp += v;
       c.din += v;
@@ -1414,7 +1596,7 @@
       if (!c.hum) continue;
       const cls = classificacao(m, c.div);
       const lugar = cls.findIndex((x) => x.id === c.id);
-      const divida = c.din < -DIV[c.div].credito * 0.6;
+      const divida = c.din < -econ(m, c.div).credito * 0.6;
       const mau = c.sem >= 8 && lugar >= POR_DIV - 2 && m.tab[c.id].j >= 8;
       if (divida || mau) {
         const login = c.hum;
@@ -1426,15 +1608,20 @@
         c.banco = null;
         t.clube = null;
         t.despedido = true;
-        t.ofertas = ofertasPara(m, Math.min(3, c.div + (rng.chance(0.5) ? 1 : 0)), 3, rng, c.id);
+        const inf = infoDiv(m, c.div);
+        const maxN = PAISES[inf.p].divs.length - 1;
+        t.ofertas = ofertasPara(m, inf.p, Math.min(maxN, inf.n + (rng.chance(0.5) ? 1 : 0)), 3, rng, c.id);
       }
     }
     void p;
   }
-  function ofertasPara(m, div, n, rng, excluir) {
-    const livres = Object.values(m.clubes).filter((c) => !c.hum && c.id !== excluir && c.div >= Math.min(div, 3));
-    const melhores = livres.filter((c) => c.div === div);
-    const lista = (melhores.length >= n ? melhores : livres).slice();
+  // convites: clubes sem treinador humano de um país/divisão (nível 0 = 1.ª)
+  function ofertasPara(m, pais, nivel, n, rng, excluir, outrosPaises) {
+    const nivelDe = (c) => infoDiv(m, c.div).n;
+    const livres = Object.values(m.clubes).filter((c) => !c.hum && c.id !== excluir);
+    let lista = livres.filter((c) => (outrosPaises ? c.pais !== pais && nivelDe(c) === 0 : c.pais === pais && nivelDe(c) === nivel));
+    if (lista.length < n && !outrosPaises) lista = lista.concat(livres.filter((c) => c.pais === pais && nivelDe(c) > nivel));
+    lista = lista.slice();
     for (let i = lista.length - 1; i > 0; i--) {
       const k = Math.floor(rng.r() * (i + 1));
       [lista[i], lista[k]] = [lista[k], lista[i]];
@@ -1469,46 +1656,57 @@
   // Fim de época: prémios, subidas/descidas, idades, juniores
   // ---------------------------------------------------------------
   function fimDeEpoca(m, rng) {
-    const resumo = { epoca: m.epoca, ano: m.ano, campeoes: [], sobem: [], descem: [], taca: m.taca.campeao, artilheiro: null };
+    const tacasCamp = {};
+    for (const pais in m.tacas) tacasCamp[pais] = m.tacas[pais].campeao;
+    const resumo = { epoca: m.epoca, ano: m.ano, campeoes: [], sobem: [], descem: [], tacas: tacasCamp, artilheiro: null };
     const art = artilheiros(m, 1)[0];
     if (art) {
       resumo.artilheiro = { n: art.n, cl: art.cl, gol: art.gol };
       m.clubes[art.cl].din += PREMIO_ARTILHEIRO;
       noticia(m, '👟 ' + art.n + ' (' + m.clubes[art.cl].n + ') é o melhor marcador com ' + art.gol + ' golos.', art.cl);
     }
-    const tabelas = [0, 1, 2, 3].map((d) => classificacao(m, d));
+    const tabelas = m.divs.map((_, d) => classificacao(m, d));
     tabelas.forEach((cls, d) => {
+      const inf = infoDiv(m, d);
+      const ec = econ(m, d);
       const camp = m.clubes[cls[0].id];
-      camp.din += DIV[d].premio;
-      m.clubes[cls[1].id].din += Math.round(DIV[d].premio / 2);
+      camp.din += ec.premio;
+      m.clubes[cls[1].id].din += Math.round(ec.premio / 2);
       resumo.campeoes.push(camp.id);
-      noticia(m, '🏆 ' + camp.n + ' é campeão da ' + NOMES_DIV[d] + '!', camp.id);
+      noticia(m, '🏆 ' + camp.n + ' é campeão da ' + nomeDiv(m, d) + '!', camp.id);
       cls.forEach((linha, lugar) => {
         const c = m.clubes[linha.id];
         if (!c.hum) return;
         const t = treinadorDe(m, c.hum);
         if (lugar === 0) {
-          t.pts += [30, 15, 10, 6][d];
-          t.titulos.push({ e: m.epoca, ano: m.ano, t: 'Campeão ' + NOMES_DIV[d], cl: c.n });
+          t.pts += [30, 15, 10, 6][inf.n] || 6;
+          t.titulos.push({ e: m.epoca, ano: m.ano, t: 'Campeão ' + nomeDiv(m, d), cl: c.n });
         }
-        if (d > 0 && lugar < 2) t.pts += 5;
-        t.hist.push({ e: m.epoca, ano: m.ano, cl: c.n, div: d, lugar: lugar + 1 });
-        // convites: quem acaba nos 2 primeiros recebe propostas de cima
-        if (lugar < 2 && d > 0) t.ofertas = ofertasPara(m, d - 1, 2, rng, c.id);
-        else if (lugar === 0 && d === 0) t.ofertas = [];
+        if (inf.n > 0 && lugar < 2) t.pts += 5;
+        t.hist.push({ e: m.epoca, ano: m.ano, cl: c.n, div: d, dn: nomeDiv(m, d), lugar: lugar + 1 });
+        // convites: quem acaba nos 2 primeiros recebe propostas de cima;
+        // o campeão da 1.ª pode ser chamado por clubes de outros países
+        if (lugar < 2 && inf.n > 0) t.ofertas = ofertasPara(m, inf.p, inf.n - 1, 2, rng, c.id);
+        else if (lugar === 0 && inf.n === 0 && m.paises.length > 1) t.ofertas = ofertasPara(m, inf.p, 0, 2, rng, c.id, true);
+        else if (lugar === 0) t.ofertas = [];
       });
     });
-    // subidas e descidas (2)
+    // subidas e descidas (2) dentro de cada país
     const novas = m.divs.map((ids) => ids.slice());
-    for (let d = 0; d < 3; d++) {
-      const desce = tabelas[d].slice(-2).map((x) => x.id);
-      const sobe = tabelas[d + 1].slice(0, 2).map((x) => x.id);
-      novas[d] = novas[d].filter((id) => !desce.includes(id)).concat(sobe);
-      novas[d + 1] = novas[d + 1].filter((id) => !sobe.includes(id)).concat(desce);
-      resumo.sobem.push(...sobe);
-      resumo.descem.push(...desce);
-      for (const id of sobe) noticia(m, '⬆️ ' + m.clubes[id].n + ' sobe à ' + NOMES_DIV[d] + '.', id);
-      for (const id of desce) noticia(m, '⬇️ ' + m.clubes[id].n + ' desce à ' + NOMES_DIV[d + 1] + '.', id);
+    for (const pais of m.paises) {
+      const ds = divsDoPais(m, pais);
+      for (let k = 0; k + 1 < ds.length; k++) {
+        const d = ds[k];
+        const d2 = ds[k + 1];
+        const desce = tabelas[d].slice(-2).map((x) => x.id);
+        const sobe = tabelas[d2].slice(0, 2).map((x) => x.id);
+        novas[d] = novas[d].filter((id) => !desce.includes(id)).concat(sobe);
+        novas[d2] = novas[d2].filter((id) => !sobe.includes(id)).concat(desce);
+        resumo.sobem.push(...sobe);
+        resumo.descem.push(...desce);
+        for (const id of sobe) noticia(m, '⬆️ ' + m.clubes[id].n + ' sobe à ' + nomeDiv(m, d) + '.', id);
+        for (const id of desce) noticia(m, '⬇️ ' + m.clubes[id].n + ' desce à ' + nomeDiv(m, d2) + '.', id);
+      }
     }
     m.divs = novas;
     novas.forEach((ids, d) => ids.forEach((id) => (m.clubes[id].div = d)));
@@ -1533,7 +1731,7 @@
       for (let k = 0; k < 2; k++) {
         if (c.pl.length >= MAX_PLANTEL) break;
         const pos = rng.peso(['G', 'D', 'M', 'A'], [1, 3, 3, 3]);
-        const j = novoJogador(m, rng, pos, Math.max(8, c.nivel * 0.55), rng.int(17, 19), { craque: 0.04 });
+        const j = novoJogador(m, rng, pos, Math.max(8, c.nivel * 0.55), rng.int(17, 19), { craque: 0.04, pais: c.pais });
         j.cl = c.id;
         c.pl.push(j.id);
         if (c.hum) noticia(m, '🌱 Subiu dos juniores: ' + j.n + ' (' + j.p + ', força ' + Math.round(j.f) + (j.c ? ', craque!' : '') + ').', c.id);
@@ -1546,7 +1744,7 @@
           pior.cl = null;
           m.mercado.livres.push(pior.id);
         }
-        c.bil = DIV[c.div].bilhete;
+        c.bil = econ(m, c.div).bilhete;
       }
       c.sem = 0;
     }
@@ -1658,6 +1856,13 @@
     VERSAO,
     CLUBES,
     NOMES_DIV,
+    PAISES,
+    nomeDiv,
+    infoDiv,
+    econ,
+    divsDoPais,
+    nomeRonda,
+    migrar,
     DIV,
     FORMACOES,
     ESTILOS,

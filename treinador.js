@@ -114,8 +114,7 @@
     },
     async nuvem() {
       if (!token() || !this.mundo) return;
-      const c = this.meu();
-      await api('carreira-guardar', { mundo: this.mundo, ts: this.atualizado, equipa: c ? equipaDesafio(this.mundo, c) : null, nome: meuNome() });
+      await api('carreira-guardar', { mundo: this.mundo, ts: this.atualizado });
     },
     meu() {
       if (!this.mundo) return null;
@@ -158,24 +157,6 @@
       return r;
     },
   };
-
-  // equipa enviada ao servidor para os Desafios (só o essencial)
-  function equipaDesafio(m, c) {
-    const esc11 = TM.escalacaoHumana(m, c);
-    const pack = (id) => {
-      const j = m.jog[id];
-      return j ? { n: j.n, p: j.p, f: Math.round(j.f * 10) / 10, i: j.i, nac: j.nac, c: j.c, cp: j.cp, ca: j.ca } : null;
-    };
-    return {
-      nome: c.n,
-      cor: c.cor,
-      div: c.div,
-      mor: c.mor,
-      tat: esc11.tat,
-      xi: esc11.xi.map(pack).filter(Boolean),
-      banco: esc11.banco.map(pack).filter(Boolean),
-    };
-  }
 
   // ---------------------------------------------------------------
   // Fonte: Liga ESTV (o mundo vive no servidor)
@@ -329,7 +310,7 @@
       '<div class="tr-inicio-txt"><h2>Começa a tua carreira</h2>' +
       '<p>Como no Elifoot, começas por baixo: escolhe um dos três clubes da <b>4.ª divisão</b> que te convidaram. Ganha jogos, compra bem, sobe de divisão e espera pelos convites dos clubes grandes. Se perderes muitos jogos seguidos ou afundares o clube em dívidas, és despedido.</p>' +
       '<ul class="tr-dicas"><li>⚽ Jogos simulados minuto a minuto, com substituições e tática.</li><li>💰 Leilões, compras, vendas, bilheteira, estádio e banco.</li><li>🏆 4 divisões, Taça, melhor marcador e ranking de treinadores.</li></ul>' +
-      (token() ? '<p class="tr-nota">A tua carreira fica guardada neste browser e na tua conta, e a tua equipa fica disponível para os <b>Desafios</b>.</p>' : '<p class="tr-nota">Dica: entra com a Twitch para guardar a carreira na tua conta e poderes ser desafiado pelos outros.</p>') +
+      (token() ? '<p class="tr-nota">A tua carreira fica guardada neste browser e na tua conta, para continuares noutro PC ou telemóvel.</p>' : '<p class="tr-nota">Dica: entra com a Twitch para guardar a carreira na tua conta e continuares noutro PC ou telemóvel.</p>') +
       '</div><div class="tr-ofertas">' +
       d4
         .map((id) => {
@@ -976,13 +957,12 @@
   // ---------------------------------------------------------------
   async function renderDesafios() {
     if (!token() || !meuLogin()) {
-      app().innerHTML = '<div class="tr-gate"><i class="fas fa-bolt"></i><h2>Desafios</h2><p>Desafia a equipa da carreira de outro espectador. O jogo é simulado no servidor, em campo neutro, e conta para o ranking de desafios.</p><button class="gate-login-btn" data-acao="login"><i class="fab fa-twitch"></i> Entrar com Twitch</button></div>';
+      app().innerHTML = '<div class="tr-gate"><i class="fas fa-bolt"></i><h2>Desafios</h2><p>Desafia o clube de outro treinador da Liga ESTV. O jogo é simulado no servidor, em campo neutro, e conta para o ranking de desafios.</p><button class="gate-login-btn" data-acao="login"><i class="fab fa-twitch"></i> Entrar com Twitch</button></div>';
       return;
     }
     app().innerHTML = '<div class="tr-carregar">A carregar…</div>';
     let d;
     try {
-      if (Carreira.mundo || Carreira.carregar()) await Carreira.nuvem().catch(() => {});
       d = await api('desafios');
     } catch (e) {
       app().innerHTML = '<div class="tr-gate"><p>' + esc(e.message) + '</p></div>';
@@ -992,9 +972,9 @@
     const eu = d.eu;
     app().innerHTML =
       '<div class="tr-desafios">' +
-      (eu ? '<div class="tr-eu-card">' + emblema({ c: (eu.nome || '?').slice(0, 3).toUpperCase(), cor: eu.cor }, 'g') + '<div><b>' + esc(eu.nome) + '</b><small>A tua equipa · ' + esc(TM.NOMES_DIV[eu.div] || '') + ' · Elo ' + eu.elo + ' · ' + eu.v + 'V ' + eu.e + 'E ' + eu.d + 'D</small></div><small class="tr-nota">Hoje: ' + d.hoje + '/' + d.limite + ' desafios</small></div>' : '<div class="tr-gate pequeno"><p>Ainda não tens equipa: começa uma <b>Carreira</b> (com a sessão iniciada) e ela fica disponível aqui.</p><button class="tr-btn" data-acao="modo" data-modo="carreira">Ir para a Carreira</button></div>') +
+      (eu ? '<div class="tr-eu-card">' + emblema({ c: (eu.nome || '?').slice(0, 3).toUpperCase(), cor: eu.cor }, 'g') + '<div><b>' + esc(eu.nome) + '</b><small>O teu clube na Liga ESTV · ' + esc(TM.NOMES_DIV[eu.div] || '') + ' · força ' + eu.forca + ' · Elo ' + eu.elo + ' · ' + eu.v + 'V ' + eu.e + 'E ' + eu.d + 'D</small></div><small class="tr-nota">Hoje: ' + d.hoje + '/' + d.limite + ' desafios</small></div><p class="tr-ajuda">Os desafios usam o teu clube e a escalação que guardaste na Liga ESTV. Não mexem na tabela da liga, só no ranking de desafios.</p>' : '<div class="tr-gate pequeno"><p>Os desafios usam o teu clube da <b>Liga ESTV</b>. ' + (d.liga ? 'Entra na liga e ficas logo com um clube.' : 'A liga ainda não começou.') + '</p>' + (d.liga ? '<button class="tr-btn" data-acao="modo" data-modo="liga">Ir para a Liga ESTV</button>' : '') + '</div>') +
       '<h3 class="tr-h3">Adversários</h3><div class="tr-tabela-wrap"><table class="tr-tabela"><thead><tr><th>Treinador</th><th>Equipa</th><th>Elo</th><th class="m-esc">Força</th><th></th></tr></thead><tbody>' +
-      (d.lista.length ? d.lista.map((x) => '<tr><td><b>' + esc(x.nomeT) + '</b></td><td>' + esc(x.nome) + '<small>' + esc(TM.NOMES_DIV[x.div] || '') + '</small></td><td>' + x.elo + '</td><td class="m-esc">' + x.forca + '</td><td>' + (eu ? '<button class="tr-btn" data-acao="desafiar" data-login="' + esc(x.login) + '"><i class="fas fa-bolt"></i> Desafiar</button>' : '') + '</td></tr>').join('') : '<tr><td colspan="5">Ainda não há outras equipas. Partilha o jogo no chat!</td></tr>') +
+      (d.lista.length ? d.lista.map((x) => '<tr><td><b>' + esc(x.nomeT) + '</b></td><td>' + esc(x.nome) + '<small>' + esc(TM.NOMES_DIV[x.div] || '') + '</small></td><td>' + x.elo + '</td><td class="m-esc">' + x.forca + '</td><td>' + (eu ? '<button class="tr-btn" data-acao="desafiar" data-login="' + esc(x.login) + '"><i class="fas fa-bolt"></i> Desafiar</button>' : '') + '</td></tr>').join('') : '<tr><td colspan="5">Ainda não há outros treinadores na Liga ESTV. Partilha o jogo no chat!</td></tr>') +
       '</tbody></table></div>' +
       '<h3 class="tr-h3">Últimos desafios</h3><ul class="tr-feed">' + (d.historico.length ? d.historico.map((h) => '<li><small>' + new Date(h.ts).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + '</small><b>' + esc(h.a) + '</b> ' + h.ga + ' - ' + h.gb + ' <b>' + esc(h.b) + '</b>' + (h.pen ? ' (pen. ' + h.pen[0] + '-' + h.pen[1] + ')' : '') + '</li>').join('') : '<li>Ainda sem desafios.</li>') + '</ul></div>';
   }
@@ -1021,9 +1001,8 @@
     app().innerHTML =
       '<div class="tr-ranking">' +
       tab('Liga ESTV — treinadores', d.liga, [['Treinador', (l) => '<b>' + esc(l.login) + '</b>'], ['Clube', (l) => esc(l.clube || '—')], ['Pontos', (l) => '<b>' + l.pts + '</b>'], ['V-E-D', (l) => l.v + '-' + l.e + '-' + l.d, true], ['Títulos', (l) => l.titulos || 0, true]]) +
-      tab('Desafios — Elo', d.desafios, [['Treinador', (l) => '<b>' + esc(l.nomeT || l.login) + '</b>'], ['Equipa', (l) => esc(l.nome)], ['Elo', (l) => '<b>' + l.elo + '</b>'], ['V-E-D', (l) => l.v + '-' + l.e + '-' + l.d, true]]) +
-      tab('Carreiras — pontos de treinador', d.carreiras, [['Treinador', (l) => '<b>' + esc(l.nomeT || l.login) + '</b>'], ['Clube', (l) => esc(l.nome) + ' <small>' + esc(TM.NOMES_DIV[l.div] || '') + '</small>'], ['Pontos', (l) => '<b>' + l.pts + '</b>'], ['Títulos', (l) => l.titulos || 0, true], ['Época', (l) => l.ano ? l.ano + '/' + String(l.ano + 1).slice(2) : '', true]]) +
-      '<p class="tr-nota">Pontos de treinador: vitória em casa 2, fora 3, empate 1, mais bónus por títulos e subidas. O ranking das carreiras usa o que cada um guardou na sua conta.</p></div>';
+      tab('Desafios — Elo', d.desafios, [['Treinador', (l) => '<b>' + esc(l.login) + '</b>'], ['Clube', (l) => esc(l.nome)], ['Elo', (l) => '<b>' + l.elo + '</b>'], ['V-E-D', (l) => l.v + '-' + l.e + '-' + l.d, true]]) +
+      '<p class="tr-nota">Pontos de treinador: vitória em casa 2, fora 3, empate 1, mais bónus por títulos e subidas. Os rankings só contam a Liga ESTV e os Desafios, que são jogados no servidor. A Carreira é para jogares sozinho.</p></div>';
   }
 
   // ---------------------------------------------------------------

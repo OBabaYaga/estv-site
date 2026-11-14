@@ -407,6 +407,7 @@
         ? '<button class="tr-btn-jogar" data-acao="jogar"><i class="fas fa-play"></i> Jogar ' + esc(nomePasso(m)) + '</button>'
         : renderRelogioLiga(fonte)) +
       (ofertas.length ? '<button class="tr-btn-convite" data-acao="ver-convites"><i class="fas fa-envelope"></i> ' + ofertas.length + ' convite(s) de outros clubes</button>' : '') +
+      (fonte === Carreira ? '<button class="tr-link perigo tr-recomecar" data-acao="nova-carreira"><i class="fas fa-rotate-left"></i> Recomeçar do zero</button>' : '') +
       '</aside>' +
       '<div class="tr-conteudo"><nav class="tr-tabs">' +
       VISTAS.map((v) => '<button class="tr-tab' + (S.vista === v[0] ? ' ativo' : '') + '" data-vista="' + v[0] + '"><i class="fas ' + v[1] + '"></i><span>' + v[2] + '</span></button>').join('') +
@@ -1280,9 +1281,15 @@
         return;
       }
       case 'nova-carreira':
-        if (!confirm('Começar uma carreira nova? Perdes a atual.')) return;
+        if (!confirm('Recomeçar do zero?\n\nA carreira atual é apagada para sempre (neste browser' + (token() ? ' e na tua conta' : '') + ') e não dá para recuperar.')) return;
+        clearTimeout(Carreira._t);
         try { localStorage.removeItem(LS_KEY); } catch (e) {}
+        if (token()) api('carreira-apagar', {}).catch(() => toast('Não consegui apagar a carreira da conta. Tenta outra vez.', 'erro'));
         Carreira.mundo = null;
+        Carreira.atualizado = 0;
+        S.esc = null;
+        S.vista = 'equipa';
+        toast('Carreira apagada. Escolhe o país para começar de novo.');
         fecharModal();
         S.semente = null;
         S.paisInicio = null;

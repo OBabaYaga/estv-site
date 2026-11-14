@@ -525,3 +525,57 @@ function initHeroCarousel() {
   goTo(0);
   startAutoplay();
 }
+
+// ===================================================================
+// Estatísticas do site (sem cookies) — conta visitas e cliques nos
+// links das redes. Só o Edu e o moderador as veem (aba Estatísticas).
+// ===================================================================
+(function () {
+  let naoContar = false;
+  try { naoContar = localStorage.getItem('estv_nao_contar') === '1'; } catch (e) {}
+  if (naoContar || /^(localhost|127\.)/.test(location.hostname) || navigator.webdriver) return;
+
+  function api() {
+    const base = (typeof ESTV_CONFIG !== 'undefined' && ESTV_CONFIG.API_BASE_URL) || 'https://estv-api-delta.vercel.app';
+    return base.replace(/\/$/, '') + '/api/stats';
+  }
+  function enviar(dados) {
+    const corpo = JSON.stringify(dados);
+    try { if (navigator.sendBeacon && navigator.sendBeacon(api(), corpo)) return; } catch (e) {}
+    try { fetch(api(), { method: 'POST', body: corpo, keepalive: true, mode: 'no-cors' }); } catch (e) {}
+  }
+  function paginaAtual() {
+    const m = location.pathname.toLowerCase().match(/([a-z0-9_-]+)\.html$/);
+    const p = m ? m[1] : 'index';
+    return p === 'index' ? 'inicio' : p;
+  }
+
+  function contarVisita() {
+    let n = 1;
+    try {
+      n = (parseInt(sessionStorage.getItem('estv_pags') || '0', 10) || 0) + 1;
+      sessionStorage.setItem('estv_pags', String(n));
+    } catch (e) {}
+    enviar({ t: 'v', p: location.pathname, n: n, r: n === 1 ? document.referrer : '' });
+  }
+  // espera pelo estv-config.js (carrega depois deste ficheiro)
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', contarVisita);
+  else contarVisita();
+
+  function aoClicar(e) {
+    if (e.type === 'auxclick' && e.button !== 1) return;
+    const a = e.target && e.target.closest && e.target.closest('a[href]');
+    if (!a || !/^https?:/i.test(a.href)) return;
+    let host = '';
+    try { host = new URL(a.href).hostname.toLowerCase(); } catch (err) { return; }
+    if (/(^|\.)estv\.pt$/.test(host) || host === location.hostname) return;
+    let rede = 'outro';
+    if (/twitch\.tv$/.test(host)) rede = 'twitch';
+    else if (/youtube\.com$|youtu\.be$/.test(host)) rede = 'youtube';
+    else if (/instagram\.com$/.test(host)) rede = 'instagram';
+    const sitio = a.closest('.sidebar, .topbar') ? 'menu' : a.closest('footer, .footer') ? 'rodape' : 'pagina';
+    enviar({ t: 'c', m: rede, s: paginaAtual() + ':' + sitio, p: location.pathname });
+  }
+  document.addEventListener('click', aoClicar, true);
+  document.addEventListener('auxclick', aoClicar, true);
+})();

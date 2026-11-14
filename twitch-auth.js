@@ -17,8 +17,9 @@ const TwitchAuth = (function () {
     CLIENT_ID: '2mo7el92ye48x099v7fnj2vaif6ra0',
     REDIRECT_URI: 'https://www.estv.pt/',
     SCOPE: '', // login apenas para identificação, sem permissões extra
-    // Contas com acesso de admin (painel de controlo).
-    ADMIN_LOGINS: ['edu___silva', 'obaba_yaga'],
+    // Contas com acesso de admin (painel de controlo e estatísticas):
+    // o Edu e o moderador (fabiosilva_tv; o antigo obaba_yaga já não entra).
+    ADMIN_LOGINS: ['edu___silva', 'fabiosilva_tv'],
   };
 
   const DEV_MODE = false;

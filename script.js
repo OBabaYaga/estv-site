@@ -537,7 +537,7 @@ function initHeroCarousel() {
 
   function api() {
     const base = (typeof ESTV_CONFIG !== 'undefined' && ESTV_CONFIG.API_BASE_URL) || 'https://estv-api-delta.vercel.app';
-    return base.replace(/\/$/, '') + '/api/stats';
+    return base.replace(/\/$/, '') + '/api/health?modo=stats';
   }
   function enviar(dados) {
     const corpo = JSON.stringify(dados);

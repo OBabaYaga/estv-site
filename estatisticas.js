@@ -1,10 +1,10 @@
 // ===================================================================
 // ESTV — Estatísticas do site (aba Estatísticas)
 // Só o Edu e o moderador (ver ADMIN_LOGINS em twitch-auth.js e na API).
-// Os dados vêm de /api/stats.
+// Os dados vêm de /api/health?modo=stats (é a mesma função, por causa do limite de 12 funções do Vercel).
 // ===================================================================
 (function () {
-  const API = ((typeof ESTV_CONFIG !== 'undefined' && ESTV_CONFIG.API_BASE_URL) || 'https://estv-api-delta.vercel.app').replace(/\/$/, '') + '/api/stats';
+  const API = ((typeof ESTV_CONFIG !== 'undefined' && ESTV_CONFIG.API_BASE_URL) || 'https://estv-api-delta.vercel.app').replace(/\/$/, '') + '/api/health?modo=stats';
   const TOKEN_KEY = 'estv_twitch_token';
   const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
   const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -36,7 +36,7 @@
     if (mesSel) { q.set('mes', mesSel); q.set('ano', mesSel.slice(0, 4)); }
     $('stNota').textContent = 'A carregar…';
     try {
-      const r = await fetch(API + '?' + q, { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' });
+      const r = await fetch(API + '&' + q, { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' });
       if (r.status === 403 || r.status === 401) { bloquear('Esta conta não tem acesso', 'Só o Edu e o moderador podem ver as estatísticas.'); return; }
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || 'erro');

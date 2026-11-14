@@ -15,7 +15,25 @@
   const eur = (v) => TM.fmtEur(v);
   const n0 = (v) => Math.round(Number(v) || 0).toLocaleString('pt-PT');
   const POS_NOME = { G: 'GR', D: 'DEF', M: 'MED', A: 'AV' };
-  const BANDEIRA = { PT: '🇵🇹', BR: '🇧🇷', ES: '🇪🇸', AR: '🇦🇷', CV: '🇨🇻', AO: '🇦🇴', FR: '🇫🇷', SN: '🇸🇳', UY: '🇺🇾', RS: '🇷🇸' , IT: '🇮🇹', EN: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' };
+  // bandeira e nome do país a partir do código (ISO de 2 letras, mais EN/SCO/WAL/NIR)
+  const BAND_ESP = { EN: '🏴\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}', SCO: '🏴\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}', WAL: '🏴\u{E0067}\u{E0062}\u{E0077}\u{E006C}\u{E0073}\u{E007F}', NIR: '🇬🇧', XK: '🇽🇰' };
+  const NOME_ESP = { EN: 'Inglaterra', SCO: 'Escócia', WAL: 'País de Gales', NIR: 'Irlanda do Norte', XK: 'Kosovo' };
+  function bandeira(c) {
+    if (!c) return '';
+    if (BAND_ESP[c]) return BAND_ESP[c];
+    if (!/^[A-Z]{2}$/.test(c)) return '';
+    return String.fromCodePoint(...[...c].map((l) => 0x1f1e6 + l.charCodeAt(0) - 65));
+  }
+  let dnPais = null;
+  function nomePais(c) {
+    if (NOME_ESP[c]) return NOME_ESP[c];
+    try {
+      dnPais = dnPais || new Intl.DisplayNames(['pt-PT'], { type: 'region' });
+      return dnPais.of(c) || c;
+    } catch (e) {
+      return c;
+    }
+  }
   const CAR_CURTA = { fin: 'FIN', cab: 'CAB', cru: 'CRU', dri: 'DRI', vel: 'VEL', arm: 'ARM', pas: 'PAS', des: 'DES', mar: 'MAR', res: 'RES', ref: 'REF', col: 'COL', sai: 'SAI', dpe: 'DPE' };
 
   function apiBase() {
@@ -482,7 +500,7 @@
         const noBanco = e.banco.includes(j.id);
         const sel2 = S.sel && S.sel.tipo === 'jog' && S.sel.v === j.id;
         return '<tr class="' + (noXi ? 'xi' : noBanco ? 'bn' : '') + (sel2 ? ' sel' : '') + '" data-acao="jog" data-id="' + j.id + '">' +
-          '<td>' + posTag(j.p) + '</td><td class="tr-nomej">' + (BANDEIRA[j.nac] || '') + ' ' + nomeJog(j) + (noXi ? ' <span class="tr-tag">titular</span>' : noBanco ? ' <span class="tr-tag b">banco</span>' : '') + '</td>' +
+          '<td>' + posTag(j.p) + '</td><td class="tr-nomej">' + bandeira(j.nac) + ' ' + nomeJog(j) + (noXi ? ' <span class="tr-tag">titular</span>' : noBanco ? ' <span class="tr-tag b">banco</span>' : '') + '</td>' +
           '<td>' + barra(j.f) + '</td><td class="m-esc">' + j.i + '</td><td class="m-esc">' + cars(j) + '</td><td class="m-esc">' + (j.gol || 0) + '</td><td>' + estadoJog(m, j) + '</td>' +
           '<td><button class="tr-mini" data-acao="ficha" data-id="' + j.id + '" aria-label="Ficha de ' + esc(j.n) + '">⋯</button></td></tr>';
       }).join('') +
@@ -546,7 +564,7 @@
       '<div><span>Clube</span><b>' + (dono ? esc(dono.n) : 'Livre') + '</b></div>' +
       '<div><span>Força</span><b>' + barra(j.f) + '</b></div>' +
       '<div><span>Idade</span><b>' + j.i + ' anos</b></div>' +
-      '<div><span>Nacionalidade</span><b>' + (BANDEIRA[j.nac] || '') + ' ' + j.nac + '</b></div>' +
+      '<div><span>Nacionalidade</span><b>' + bandeira(j.nac) + ' ' + esc(nomePais(j.nac)) + '</b></div>' +
       '<div><span>Características</span><b>' + (j.ca.map((k) => esc(TM.CARACT[k])).join(', ') || '—') + '</b></div>' +
       '<div><span>Comportamento</span><b>' + TM.COMPORTAMENTO[j.cp] + '</b></div>' +
       '<div><span>Salário</span><b>' + eur(j.sal) + ' / jornada</b></div>' +
@@ -650,7 +668,7 @@
     const c = fonte.meu();
     const tabs = [['leiloes', 'Leilões (' + m.mercado.leiloes.length + ')'], ['procurar', 'Procurar jogadores'], ['livres', 'Livres (' + m.mercado.livres.length + ')'], ['meus', 'Os meus']];
     let corpo = '';
-    const linhaJ = (j, extra) => '<tr data-acao="ficha" data-id="' + j.id + '"><td>' + posTag(j.p) + '</td><td class="tr-nomej">' + (BANDEIRA[j.nac] || '') + ' ' + nomeJog(j) + '<small>' + (j.cl ? esc(nomeClube(m, j.cl)) : 'livre') + ' · ' + j.i + ' anos</small></td><td>' + barra(j.f) + '</td><td class="m-esc">' + cars(j) + '</td>' + extra + '</tr>';
+    const linhaJ = (j, extra) => '<tr data-acao="ficha" data-id="' + j.id + '"><td>' + posTag(j.p) + '</td><td class="tr-nomej">' + bandeira(j.nac) + ' ' + nomeJog(j) + '<small>' + (j.cl ? esc(nomeClube(m, j.cl)) : 'livre') + ' · ' + j.i + ' anos</small></td><td>' + barra(j.f) + '</td><td class="m-esc">' + cars(j) + '</td>' + extra + '</tr>';
     if (S.mercado === 'leiloes') {
       const ls = m.mercado.leiloes.map((l) => ({ l, j: m.jog[l.j] })).filter((x) => x.j).sort((a, b) => b.j.f - a.j.f);
       corpo = ls.length

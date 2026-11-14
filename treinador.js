@@ -815,25 +815,14 @@
     return '90+' + (jg.min - 90) + "'";
   }
   // ---------------------------------------------------------------
-  // SOM: tudo gerado no browser (sem ficheiros de áudio).
-  //  - bancada: murmúrio + cânticos (vozes com formantes) + palmas
-  //  - golo: a bancada a gritar "GOOOLO!"; contra: lamento
-  //  - apito do árbitro: início, intervalo e fim
+  // SOM: só o apito do árbitro (início, intervalo e fim), gerado no browser
   // Liga/desliga no botão 🔊 dos jogos ao vivo.
   // ---------------------------------------------------------------
-  const VOGAIS = {
-    a: [730, 1090, 2440],
-    e: [530, 1840, 2480],
-    i: [300, 2200, 2950],
-    o: [520, 860, 2410],
-    u: [320, 800, 2240],
-  };
   const Som = {
     ctx: null,
     ligado: (function () {
       try { return localStorage.getItem('estv_treinador_som') !== '0'; } catch (e) { return true; }
     })(),
-    ambiente: null,
     rnd(a, b) { return a + Math.random() * (b - a); },
     garantir() {
       if (!this.ligado) return null;
@@ -909,219 +898,9 @@
       src.loop = true;
       return src;
     },
-    // Coro de muitas vozes desafinadas umas das outras, a cantar "notas"
-    // {t, d, s (semitons), s2 (deslize até), v (vogal)}. Três grupos
-    // (esquerda/centro/direita), cada um com o seu banco de formantes.
-    coro(t0, notas, op) {
-      const c = this.ctx;
-      const base = op.base || 150;
-      const nv = op.vozes || 24;
-      const fimT = t0 + Math.max(...notas.map((n) => n.t + n.d)) + 0.6;
-      const grupos = [-0.65, 0, 0.65].map((pan) => {
-        const soma = c.createGain();
-        soma.gain.value = (op.vol || 0.5) / Math.sqrt(nv);
-        const saidaG = c.createGain();
-        const bps = [0, 1, 2].map((k) => {
-          const bp = c.createBiquadFilter();
-          bp.type = 'bandpass';
-          const g = c.createGain();
-          g.gain.value = [1.6, 0.9, 0.35][k];
-          soma.connect(bp).connect(g).connect(saidaG);
-          return bp;
-        });
-        for (const n of notas) {
-          const f = VOGAIS[n.v] || VOGAIS.o;
-          bps.forEach((bp, k) => {
-            const fk = f[k] * (op.formante || 1);
-            if (n === notas[0]) bp.frequency.setValueAtTime(fk, t0);
-            bp.frequency.setTargetAtTime(fk, t0 + n.t, 0.03);
-            bp.Q.setValueAtTime(fk / [90, 110, 160][k], t0 + n.t);
-          });
-        }
-        this.saida(saidaG, pan);
-        return soma;
-      });
-      for (let i = 0; i < nv; i++) {
-        const osc = c.createOscillator();
-        osc.type = 'sawtooth';
-        const espalha = op.espalha || 35;
-        osc.detune.value = this.rnd(-espalha, espalha);
-        // vibrato natural da voz
-        const vib = c.createOscillator();
-        vib.frequency.value = this.rnd(4.2, 6.3);
-        const vibG = c.createGain();
-        vibG.gain.value = this.rnd(8, 22);
-        vib.connect(vibG).connect(osc.detune);
-        const g = c.createGain();
-        g.gain.value = 0;
-        const atraso = op.atraso || 0.06;
-        for (const n of notas) {
-          const ti = t0 + n.t + Math.random() * atraso;
-          const f1 = base * Math.pow(2, n.s / 12);
-          osc.frequency.setTargetAtTime(f1, ti, 0.025);
-          if (n.s2 != null) osc.frequency.setTargetAtTime(base * Math.pow(2, n.s2 / 12), ti + 0.08, n.dz || n.d / 3);
-          const amp = n.a == null ? 1 : n.a;
-          g.gain.setTargetAtTime(amp, ti, n.ataque || 0.035);
-          const tf = t0 + n.t + n.d + Math.random() * atraso * 0.5;
-          g.gain.setTargetAtTime(n.liga ? amp * 0.55 : 0, tf, n.liga ? 0.02 : n.solta || 0.06);
-        }
-        osc.connect(g).connect(grupos[i % 3]);
-        osc.start(t0);
-        vib.start(t0);
-        osc.stop(fimT);
-        vib.stop(fimT);
-      }
-    },
-    // palmas de muita gente (cada "palma" são várias pessoas desacertadas)
-    palmas(t0, tempos, vol) {
-      const c = this.ctx;
-      const bp = c.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.frequency.value = 1500;
-      bp.Q.value = 0.8;
-      const g0 = c.createGain();
-      g0.gain.value = vol || 0.5;
-      bp.connect(g0);
-      this.saida(g0, 0);
-      for (const tp of tempos) {
-        for (let k = 0; k < 14; k++) {
-          const t = t0 + tp + Math.random() * 0.045;
-          const src = this.fonteRuido();
-          const g = c.createGain();
-          g.gain.setValueAtTime(0, t);
-          g.gain.linearRampToValueAtTime(this.rnd(0.4, 1), t + 0.003);
-          g.gain.setTargetAtTime(0, t + 0.004, 0.018);
-          src.connect(g).connect(bp);
-          src.start(t, Math.random() * 2.5);
-          src.stop(t + 0.15);
-        }
-      }
-    },
-    // rugido de ruído (por baixo dos gritos)
-    rugido(t0, dur, freq, vol, sobe) {
-      const c = this.ctx;
-      const src = this.fonteRuido();
-      const bp = c.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.Q.value = 0.6;
-      bp.frequency.setValueAtTime(freq, t0);
-      if (sobe) bp.frequency.linearRampToValueAtTime(freq * sobe, t0 + 0.5);
-      const g = c.createGain();
-      g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(vol, t0 + 0.3);
-      g.gain.setValueAtTime(vol, t0 + dur * 0.5);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-      src.connect(bp).connect(g);
-      this.saida(g, 0);
-      src.start(t0, Math.random() * 2);
-      src.stop(t0 + dur + 0.1);
-    },
-    // ----- cânticos da bancada -----
-    CANTICOS: [
-      // "Olé, olé olé olé — olé, olééé"
-      { base: 165, notas: [[0, 0.32, 0, 'o'], [0.34, 0.6, 4, 'e'], [1.0, 0.25, 0, 'o'], [1.27, 0.28, 4, 'e'], [1.6, 0.25, 0, 'o'], [1.87, 0.28, 4, 'e'], [2.2, 0.25, 0, 'o'], [2.47, 0.55, 4, 'e'], [3.1, 0.3, 2, 'o'], [3.42, 1.3, 0, 'e']] },
-      // "Ô ô ô ô — ô ô ô" (grave, ao estilo das claques)
-      { base: 123, notas: [[0, 0.5, 0, 'o'], [0.55, 0.5, 0, 'o'], [1.1, 0.5, 3, 'o'], [1.65, 0.9, 5, 'o'], [2.75, 0.45, 3, 'o'], [3.25, 0.45, 0, 'o'], [3.75, 1.1, -2, 'o']] },
-      // "Va-mos ga-nhar!" com palmas
-      { base: 150, palmas: [0, 0.4, 0.8, 1.0, 1.2], notas: [[1.6, 0.28, 0, 'a'], [1.9, 0.38, 2, 'o'], [2.4, 0.28, 4, 'a'], [2.72, 0.28, 2, 'a'], [3.05, 0.9, 0, 'a']], repete: 2, periodo: 4.4 },
-      // "Ê-ê-ê-ê" a subir (ânimo)
-      { base: 155, notas: [[0, 0.35, 0, 'e'], [0.4, 0.35, 2, 'e'], [0.8, 0.35, 4, 'e'], [1.2, 1.0, 5, 'e'], [2.5, 0.35, 4, 'e'], [2.9, 0.35, 2, 'e'], [3.3, 1.2, 0, 'e']] },
-    ],
-    cantar(i) {
-      const c = this.ctx;
-      const k = this.CANTICOS[i == null ? Math.floor(Math.random() * this.CANTICOS.length) : i];
-      const t0 = c.currentTime + 0.1;
-      const rep = k.repete || 1;
-      let notas = [];
-      for (let r = 0; r < rep; r++) {
-        const off = r * (k.periodo || 0);
-        notas = notas.concat(k.notas.map((n) => ({ t: n[0] + off, d: n[1], s: n[2], v: n[3] })));
-        if (k.palmas) this.palmas(t0 + off, k.palmas, 0.32);
-      }
-      this.coro(t0, notas, { base: k.base * this.rnd(0.97, 1.03), vozes: 27, vol: 0.32, espalha: 30 });
-      const dur = Math.max(...notas.map((n) => n.t + n.d));
-      return dur;
-    },
-    // murmúrio contínuo + cânticos de vez em quando
-    iniciarAmbiente() {
-      if (this.ambiente) return;
-      const c = this.garantir();
-      if (!c) return;
-      const src = this.fonteRuido();
-      const bp = c.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.frequency.value = 480;
-      bp.Q.value = 0.8;
-      const lp = c.createBiquadFilter();
-      lp.type = 'lowpass';
-      lp.frequency.value = 1400;
-      const g = c.createGain();
-      g.gain.value = 0;
-      g.gain.linearRampToValueAtTime(0.2, c.currentTime + 2.5);
-      const lfo = c.createOscillator();
-      lfo.frequency.value = 0.11;
-      const lfoG = c.createGain();
-      lfoG.gain.value = 0.05;
-      lfo.connect(lfoG).connect(g.gain);
-      src.connect(bp).connect(lp).connect(g);
-      this.saida(g, 0);
-      src.start();
-      lfo.start();
-      const a = { src, g, lfo, timer: null };
-      this.ambiente = a;
-      const proximo = (espera) => {
-        a.timer = setTimeout(() => {
-          if (this.ambiente !== a || !this.ligado) return;
-          let dur = 4;
-          if (!document.hidden && this.ctx.state === 'running') dur = this.cantar();
-          proximo((dur + this.rnd(5, 11)) * 1000);
-        }, espera);
-      };
-      proximo(this.rnd(1500, 3500));
-    },
-    pararAmbiente() {
-      const a = this.ambiente;
-      if (!a || !this.ctx) return;
-      this.ambiente = null;
-      clearTimeout(a.timer);
-      const t = this.ctx.currentTime;
-      a.g.gain.cancelScheduledValues(t);
-      a.g.gain.setValueAtTime(a.g.gain.value, t);
-      a.g.gain.linearRampToValueAtTime(0, t + 1.5);
-      setTimeout(() => {
-        try { a.src.stop(); a.lfo.stop(); } catch (e) {}
-      }, 1700);
-    },
-    // golo a nosso favor: "GOOOOOOLO!" + rugido + palmas; contra: lamento
-    golo(nosso) {
-      const c = this.garantir();
-      if (!c) return;
-      const t = c.currentTime + 0.05;
-      if (nosso) {
-        this.rugido(t, 5.5, 900, 0.3, 1.3);
-        // "GO" — começa um pouco abaixo e sobe; "OOOO" longo; "LO" cai
-        this.coro(t, [
-          { t: 0, d: 2.9, s: -4, s2: 1, dz: 0.18, v: 'o', ataque: 0.02, liga: true },
-          { t: 3.0, d: 0.75, s: -3, s2: -6, dz: 0.3, v: 'o', ataque: 0.03, solta: 0.25 },
-        ], { base: 260, vozes: 36, vol: 0.75, espalha: 140, atraso: 0.25, formante: 1.12 });
-        // segundo "GOLO!" mais curto e palmas
-        this.coro(t + 4.2, [
-          { t: 0, d: 0.7, s: -2, s2: 0, v: 'o', ataque: 0.02, liga: true },
-          { t: 0.75, d: 0.5, s: -4, s2: -7, v: 'o', solta: 0.2 },
-        ], { base: 250, vozes: 30, vol: 0.5, espalha: 140, atraso: 0.15, formante: 1.12 });
-        this.palmas(t + 5.7, [0, 0.42, 0.84, 1.26, 1.68, 2.1], 0.3);
-      } else {
-        this.rugido(t, 2.4, 380, 0.25);
-        this.coro(t, [{ t: 0, d: 1.6, s: 0, s2: -7, dz: 0.6, v: 'o', ataque: 0.1, solta: 0.4 }], { base: 150, vozes: 24, vol: 0.4, espalha: 70, atraso: 0.2 });
-      }
-    },
-    // "uuuuh!" numa bola ao poste, à barra ou penálti falhado
-    quase() {
-      const c = this.garantir();
-      if (!c) return;
-      const t = c.currentTime + 0.05;
-      this.coro(t, [{ t: 0, d: 1.0, s: 3, s2: -4, dz: 0.4, v: 'u', ataque: 0.05, solta: 0.3 }], { base: 200, vozes: 28, vol: 0.5, espalha: 90, atraso: 0.12 });
-    },
+    // (sem som de bancada: o utilizador preferiu só o apito)
+    iniciarAmbiente() {},
+    pararAmbiente() {},
     // apito do árbitro: 'inicio' (1 longo), 'intervalo' (2), 'fim' (3)
     apito(tipo) {
       const c = this.garantir();
@@ -1201,15 +980,11 @@
     const novos = jg.ev.slice(vistos);
     av.somVistos = jg.ev.length;
     for (const e of novos) {
-      if (e.t === 'g') Som.golo(!av.lado || e.l === av.lado);
-      else if (e.t === 'pos' || e.t === 'bar' || e.t === 'pf') Som.quase();
-      else if (e.t === 'int') Som.apito('intervalo');
+      if (e.t === 'int') Som.apito('intervalo');
     }
     if (av.fim && !av.somFim) {
       av.somFim = true;
       Som.apito('fim');
-      const a = Som.ambiente;
-      setTimeout(() => { if (Som.ambiente === a) Som.pararAmbiente(); }, 2500);
     }
   }
   function renderAoVivo() {
@@ -1222,7 +997,7 @@
         ? '<button class="tr-btn2" data-acao="pausa" id="trPausa"></button>' + VELS.map((v, k) => '<button class="tr-vel' + (S.vel === k ? ' ativo' : '') + '" data-acao="vel" data-v="' + k + '">' + v.n + '</button>').join('') +
           '<label class="tr-check"><input type="checkbox" id="trPausaInt"' + (S.pausaIntervalo ? ' checked' : '') + '> Parar ao intervalo</label>'
         : '') +
-      '<button class="tr-vel tr-som" data-acao="som" title="Som dos adeptos" aria-label="Ligar ou desligar o som">' + (Som.ligado ? '🔊' : '🔇') + '</button>' +
+      '<button class="tr-vel tr-som" data-acao="som" title="Apito do árbitro" aria-label="Ligar ou desligar o som">' + (Som.ligado ? '🔊' : '🔇') + '</button>' +
       '</div></div><div id="trVivoCorpo"></div></div>';
     if (!av.fim) Som.iniciarAmbiente();
     desenharAoVivo();

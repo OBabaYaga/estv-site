@@ -815,38 +815,33 @@
     return '90+' + (jg.min - 90) + "'";
   }
   // ---------------------------------------------------------------
-  // SOM: adeptos no estádio e festejo dos golos (gerado no browser,
-  // volume baixo; liga/desliga no botão 🔊 dos jogos ao vivo)
+  // SOM: tudo gerado no browser (sem ficheiros de áudio).
+  //  - bancada: murmúrio + cânticos (vozes com formantes) + palmas
+  //  - golo: a bancada a gritar "GOOOLO!"; contra: lamento
+  //  - apito do árbitro: início, intervalo e fim
+  // Liga/desliga no botão 🔊 dos jogos ao vivo.
   // ---------------------------------------------------------------
+  const VOGAIS = {
+    a: [730, 1090, 2440],
+    e: [530, 1840, 2480],
+    i: [300, 2200, 2950],
+    o: [520, 860, 2410],
+    u: [320, 800, 2240],
+  };
   const Som = {
     ctx: null,
     ligado: (function () {
       try { return localStorage.getItem('estv_treinador_som') !== '0'; } catch (e) { return true; }
     })(),
     ambiente: null,
+    rnd(a, b) { return a + Math.random() * (b - a); },
     garantir() {
       if (!this.ligado) return null;
       try {
         if (!this.ctx) {
           const AC = window.AudioContext || window.webkitAudioContext;
           if (!AC) return null;
-          this.ctx = new AC();
-          this.mestre = this.ctx.createGain();
-          this.mestre.gain.value = 1;
-          this.mestre.connect(this.ctx.destination);
-          // ruído rosa (base de tudo)
-          const n = this.ctx.sampleRate * 3;
-          const buf = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
-          const d = buf.getChannelData(0);
-          let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-          for (let i = 0; i < n; i++) {
-            const w = Math.random() * 2 - 1;
-            b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759; b2 = 0.969 * b2 + w * 0.153852;
-            b3 = 0.8665 * b3 + w * 0.3104856; b4 = 0.55 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.016898;
-            d[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
-            b6 = w * 0.115926;
-          }
-          this.ruido = buf;
+          this.montar(new AC());
         }
         if (this.ctx.state === 'suspended') this.ctx.resume();
         return this.ctx;
@@ -854,14 +849,200 @@
         return null;
       }
     },
+    // liga a cadeia: mestre -> compressor -> saída, mais um "eco" de estádio
+    montar(c) {
+      this.ctx = c;
+      const comp = c.createDynamicsCompressor();
+      comp.threshold.value = -16;
+      comp.ratio.value = 6;
+      comp.connect(c.destination);
+      this.mestre = c.createGain();
+      this.mestre.gain.value = 0.8;
+      this.mestre.connect(comp);
+      // ruído rosa (base do murmúrio, palmas e sopro do apito)
+      const n = c.sampleRate * 3;
+      const buf = c.createBuffer(1, n, c.sampleRate);
+      const d = buf.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      for (let i = 0; i < n; i++) {
+        const w = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759; b2 = 0.969 * b2 + w * 0.153852;
+        b3 = 0.8665 * b3 + w * 0.3104856; b4 = 0.55 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.016898;
+        d[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
+        b6 = w * 0.115926;
+      }
+      this.ruido = buf;
+      // reverberação de estádio (resposta ao impulso sintética, 2,4 s)
+      const len = Math.floor(c.sampleRate * 2.4);
+      const ir = c.createBuffer(2, len, c.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const x = ir.getChannelData(ch);
+        for (let i = 0; i < len; i++) {
+          const t = i / c.sampleRate;
+          x[i] = (Math.random() * 2 - 1) * Math.exp(-t / 0.55) * (t < 0.03 ? t / 0.03 : 1);
+        }
+      }
+      const conv = c.createConvolver();
+      conv.buffer = ir;
+      const lp = c.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 3200;
+      this.eco = c.createGain();
+      this.eco.gain.value = 0.35;
+      this.eco.connect(conv).connect(lp).connect(this.mestre);
+    },
+    saida(no, pan) {
+      const c = this.ctx;
+      let fim = no;
+      if (pan && c.createStereoPanner) {
+        const p = c.createStereoPanner();
+        p.pan.value = pan;
+        no.connect(p);
+        fim = p;
+      }
+      fim.connect(this.mestre);
+      fim.connect(this.eco);
+    },
     fonteRuido() {
       const src = this.ctx.createBufferSource();
       src.buffer = this.ruido;
       src.loop = true;
-      src.loopStart = Math.random();
       return src;
     },
-    // murmúrio contínuo dos adeptos, com ondas a subir e descer
+    // Coro de muitas vozes desafinadas umas das outras, a cantar "notas"
+    // {t, d, s (semitons), s2 (deslize até), v (vogal)}. Três grupos
+    // (esquerda/centro/direita), cada um com o seu banco de formantes.
+    coro(t0, notas, op) {
+      const c = this.ctx;
+      const base = op.base || 150;
+      const nv = op.vozes || 24;
+      const fimT = t0 + Math.max(...notas.map((n) => n.t + n.d)) + 0.6;
+      const grupos = [-0.65, 0, 0.65].map((pan) => {
+        const soma = c.createGain();
+        soma.gain.value = (op.vol || 0.5) / Math.sqrt(nv);
+        const saidaG = c.createGain();
+        const bps = [0, 1, 2].map((k) => {
+          const bp = c.createBiquadFilter();
+          bp.type = 'bandpass';
+          const g = c.createGain();
+          g.gain.value = [1.6, 0.9, 0.35][k];
+          soma.connect(bp).connect(g).connect(saidaG);
+          return bp;
+        });
+        for (const n of notas) {
+          const f = VOGAIS[n.v] || VOGAIS.o;
+          bps.forEach((bp, k) => {
+            const fk = f[k] * (op.formante || 1);
+            if (n === notas[0]) bp.frequency.setValueAtTime(fk, t0);
+            bp.frequency.setTargetAtTime(fk, t0 + n.t, 0.03);
+            bp.Q.setValueAtTime(fk / [90, 110, 160][k], t0 + n.t);
+          });
+        }
+        this.saida(saidaG, pan);
+        return soma;
+      });
+      for (let i = 0; i < nv; i++) {
+        const osc = c.createOscillator();
+        osc.type = 'sawtooth';
+        const espalha = op.espalha || 35;
+        osc.detune.value = this.rnd(-espalha, espalha);
+        // vibrato natural da voz
+        const vib = c.createOscillator();
+        vib.frequency.value = this.rnd(4.2, 6.3);
+        const vibG = c.createGain();
+        vibG.gain.value = this.rnd(8, 22);
+        vib.connect(vibG).connect(osc.detune);
+        const g = c.createGain();
+        g.gain.value = 0;
+        const atraso = op.atraso || 0.06;
+        for (const n of notas) {
+          const ti = t0 + n.t + Math.random() * atraso;
+          const f1 = base * Math.pow(2, n.s / 12);
+          osc.frequency.setTargetAtTime(f1, ti, 0.025);
+          if (n.s2 != null) osc.frequency.setTargetAtTime(base * Math.pow(2, n.s2 / 12), ti + 0.08, n.dz || n.d / 3);
+          const amp = n.a == null ? 1 : n.a;
+          g.gain.setTargetAtTime(amp, ti, n.ataque || 0.035);
+          const tf = t0 + n.t + n.d + Math.random() * atraso * 0.5;
+          g.gain.setTargetAtTime(n.liga ? amp * 0.55 : 0, tf, n.liga ? 0.02 : n.solta || 0.06);
+        }
+        osc.connect(g).connect(grupos[i % 3]);
+        osc.start(t0);
+        vib.start(t0);
+        osc.stop(fimT);
+        vib.stop(fimT);
+      }
+    },
+    // palmas de muita gente (cada "palma" são várias pessoas desacertadas)
+    palmas(t0, tempos, vol) {
+      const c = this.ctx;
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1500;
+      bp.Q.value = 0.8;
+      const g0 = c.createGain();
+      g0.gain.value = vol || 0.5;
+      bp.connect(g0);
+      this.saida(g0, 0);
+      for (const tp of tempos) {
+        for (let k = 0; k < 14; k++) {
+          const t = t0 + tp + Math.random() * 0.045;
+          const src = this.fonteRuido();
+          const g = c.createGain();
+          g.gain.setValueAtTime(0, t);
+          g.gain.linearRampToValueAtTime(this.rnd(0.4, 1), t + 0.003);
+          g.gain.setTargetAtTime(0, t + 0.004, 0.018);
+          src.connect(g).connect(bp);
+          src.start(t, Math.random() * 2.5);
+          src.stop(t + 0.15);
+        }
+      }
+    },
+    // rugido de ruído (por baixo dos gritos)
+    rugido(t0, dur, freq, vol, sobe) {
+      const c = this.ctx;
+      const src = this.fonteRuido();
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.Q.value = 0.6;
+      bp.frequency.setValueAtTime(freq, t0);
+      if (sobe) bp.frequency.linearRampToValueAtTime(freq * sobe, t0 + 0.5);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + 0.3);
+      g.gain.setValueAtTime(vol, t0 + dur * 0.5);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      src.connect(bp).connect(g);
+      this.saida(g, 0);
+      src.start(t0, Math.random() * 2);
+      src.stop(t0 + dur + 0.1);
+    },
+    // ----- cânticos da bancada -----
+    CANTICOS: [
+      // "Olé, olé olé olé — olé, olééé"
+      { base: 165, notas: [[0, 0.32, 0, 'o'], [0.34, 0.6, 4, 'e'], [1.0, 0.25, 0, 'o'], [1.27, 0.28, 4, 'e'], [1.6, 0.25, 0, 'o'], [1.87, 0.28, 4, 'e'], [2.2, 0.25, 0, 'o'], [2.47, 0.55, 4, 'e'], [3.1, 0.3, 2, 'o'], [3.42, 1.3, 0, 'e']] },
+      // "Ô ô ô ô — ô ô ô" (grave, ao estilo das claques)
+      { base: 123, notas: [[0, 0.5, 0, 'o'], [0.55, 0.5, 0, 'o'], [1.1, 0.5, 3, 'o'], [1.65, 0.9, 5, 'o'], [2.75, 0.45, 3, 'o'], [3.25, 0.45, 0, 'o'], [3.75, 1.1, -2, 'o']] },
+      // "Va-mos ga-nhar!" com palmas
+      { base: 150, palmas: [0, 0.4, 0.8, 1.0, 1.2], notas: [[1.6, 0.28, 0, 'a'], [1.9, 0.38, 2, 'o'], [2.4, 0.28, 4, 'a'], [2.72, 0.28, 2, 'a'], [3.05, 0.9, 0, 'a']], repete: 2, periodo: 4.4 },
+      // "Ê-ê-ê-ê" a subir (ânimo)
+      { base: 155, notas: [[0, 0.35, 0, 'e'], [0.4, 0.35, 2, 'e'], [0.8, 0.35, 4, 'e'], [1.2, 1.0, 5, 'e'], [2.5, 0.35, 4, 'e'], [2.9, 0.35, 2, 'e'], [3.3, 1.2, 0, 'e']] },
+    ],
+    cantar(i) {
+      const c = this.ctx;
+      const k = this.CANTICOS[i == null ? Math.floor(Math.random() * this.CANTICOS.length) : i];
+      const t0 = c.currentTime + 0.1;
+      const rep = k.repete || 1;
+      let notas = [];
+      for (let r = 0; r < rep; r++) {
+        const off = r * (k.periodo || 0);
+        notas = notas.concat(k.notas.map((n) => ({ t: n[0] + off, d: n[1], s: n[2], v: n[3] })));
+        if (k.palmas) this.palmas(t0 + off, k.palmas, 0.32);
+      }
+      this.coro(t0, notas, { base: k.base * this.rnd(0.97, 1.03), vozes: 27, vol: 0.32, espalha: 30 });
+      const dur = Math.max(...notas.map((n) => n.t + n.d));
+      return dur;
+    },
+    // murmúrio contínuo + cânticos de vez em quando
     iniciarAmbiente() {
       if (this.ambiente) return;
       const c = this.garantir();
@@ -869,29 +1050,40 @@
       const src = this.fonteRuido();
       const bp = c.createBiquadFilter();
       bp.type = 'bandpass';
-      bp.frequency.value = 520;
-      bp.Q.value = 0.7;
+      bp.frequency.value = 480;
+      bp.Q.value = 0.8;
       const lp = c.createBiquadFilter();
       lp.type = 'lowpass';
-      lp.frequency.value = 1600;
+      lp.frequency.value = 1400;
       const g = c.createGain();
       g.gain.value = 0;
-      g.gain.linearRampToValueAtTime(0.4, c.currentTime + 2.5);
-      // ondas lentas no volume (cânticos ao longe)
+      g.gain.linearRampToValueAtTime(0.2, c.currentTime + 2.5);
       const lfo = c.createOscillator();
-      lfo.frequency.value = 0.13;
+      lfo.frequency.value = 0.11;
       const lfoG = c.createGain();
-      lfoG.gain.value = 0.11;
+      lfoG.gain.value = 0.05;
       lfo.connect(lfoG).connect(g.gain);
-      src.connect(bp).connect(lp).connect(g).connect(this.mestre);
+      src.connect(bp).connect(lp).connect(g);
+      this.saida(g, 0);
       src.start();
       lfo.start();
-      this.ambiente = { src, g, lfo };
+      const a = { src, g, lfo, timer: null };
+      this.ambiente = a;
+      const proximo = (espera) => {
+        a.timer = setTimeout(() => {
+          if (this.ambiente !== a || !this.ligado) return;
+          let dur = 4;
+          if (!document.hidden && this.ctx.state === 'running') dur = this.cantar();
+          proximo((dur + this.rnd(5, 11)) * 1000);
+        }, espera);
+      };
+      proximo(this.rnd(1500, 3500));
     },
     pararAmbiente() {
       const a = this.ambiente;
       if (!a || !this.ctx) return;
       this.ambiente = null;
+      clearTimeout(a.timer);
       const t = this.ctx.currentTime;
       a.g.gain.cancelScheduledValues(t);
       a.g.gain.setValueAtTime(a.g.gain.value, t);
@@ -900,52 +1092,89 @@
         try { a.src.stop(); a.lfo.stop(); } catch (e) {}
       }, 1700);
     },
-    // festejo do golo (a nosso favor) ou lamento (contra)
+    // golo a nosso favor: "GOOOOOOLO!" + rugido + palmas; contra: lamento
     golo(nosso) {
       const c = this.garantir();
       if (!c) return;
-      const t = c.currentTime;
-      const src = this.fonteRuido();
-      const bp = c.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.Q.value = 0.55;
-      const g = c.createGain();
-      g.gain.setValueAtTime(0.0001, t);
+      const t = c.currentTime + 0.05;
       if (nosso) {
-        bp.frequency.setValueAtTime(700, t);
-        bp.frequency.linearRampToValueAtTime(1100, t + 0.6);
-        bp.frequency.linearRampToValueAtTime(800, t + 4);
-        g.gain.exponentialRampToValueAtTime(0.9, t + 0.35);
-        g.gain.setValueAtTime(0.9, t + 1.4);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 4.8);
+        this.rugido(t, 5.5, 900, 0.3, 1.3);
+        // "GO" — começa um pouco abaixo e sobe; "OOOO" longo; "LO" cai
+        this.coro(t, [
+          { t: 0, d: 2.9, s: -4, s2: 1, dz: 0.18, v: 'o', ataque: 0.02, liga: true },
+          { t: 3.0, d: 0.75, s: -3, s2: -6, dz: 0.3, v: 'o', ataque: 0.03, solta: 0.25 },
+        ], { base: 260, vozes: 36, vol: 0.75, espalha: 140, atraso: 0.25, formante: 1.12 });
+        // segundo "GOLO!" mais curto e palmas
+        this.coro(t + 4.2, [
+          { t: 0, d: 0.7, s: -2, s2: 0, v: 'o', ataque: 0.02, liga: true },
+          { t: 0.75, d: 0.5, s: -4, s2: -7, v: 'o', solta: 0.2 },
+        ], { base: 250, vozes: 30, vol: 0.5, espalha: 140, atraso: 0.15, formante: 1.12 });
+        this.palmas(t + 5.7, [0, 0.42, 0.84, 1.26, 1.68, 2.1], 0.3);
       } else {
-        bp.frequency.setValueAtTime(420, t);
-        bp.frequency.linearRampToValueAtTime(300, t + 1.5);
-        g.gain.exponentialRampToValueAtTime(0.45, t + 0.25);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+        this.rugido(t, 2.4, 380, 0.25);
+        this.coro(t, [{ t: 0, d: 1.6, s: 0, s2: -7, dz: 0.6, v: 'o', ataque: 0.1, solta: 0.4 }], { base: 150, vozes: 24, vol: 0.4, espalha: 70, atraso: 0.2 });
       }
-      src.connect(bp).connect(g).connect(this.mestre);
-      src.start(t);
-      src.stop(t + 5);
     },
-    // "uuuh" curto numa bola ao poste / grande defesa
+    // "uuuuh!" numa bola ao poste, à barra ou penálti falhado
     quase() {
       const c = this.garantir();
       if (!c) return;
-      const t = c.currentTime;
-      const src = this.fonteRuido();
-      const bp = c.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.Q.value = 1.2;
-      bp.frequency.setValueAtTime(600, t);
-      bp.frequency.linearRampToValueAtTime(380, t + 1);
-      const g = c.createGain();
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.38, t + 0.2);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.3);
-      src.connect(bp).connect(g).connect(this.mestre);
-      src.start(t);
-      src.stop(t + 1.5);
+      const t = c.currentTime + 0.05;
+      this.coro(t, [{ t: 0, d: 1.0, s: 3, s2: -4, dz: 0.4, v: 'u', ataque: 0.05, solta: 0.3 }], { base: 200, vozes: 28, vol: 0.5, espalha: 90, atraso: 0.12 });
+    },
+    // apito do árbitro: 'inicio' (1 longo), 'intervalo' (2), 'fim' (3)
+    apito(tipo) {
+      const c = this.garantir();
+      if (!c) return;
+      const padrao = { inicio: [0.9], intervalo: [0.28, 0.9], fim: [0.28, 0.28, 1.3] }[tipo] || [0.6];
+      let t = c.currentTime + 0.05;
+      for (const d of padrao) {
+        this.sopro(t, d);
+        t += d + 0.18;
+      }
+    },
+    sopro(t, d) {
+      const c = this.ctx;
+      const f0 = this.rnd(2950, 3150);
+      const osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = f0;
+      // a ervilha a rolar dentro do apito: trinado rápido na frequência e no volume
+      const pea = c.createOscillator();
+      pea.frequency.value = this.rnd(34, 42);
+      const peaF = c.createGain();
+      peaF.gain.value = 210;
+      pea.connect(peaF).connect(osc.frequency);
+      const h2 = c.createOscillator();
+      h2.type = 'sine';
+      h2.frequency.value = f0 * 2;
+      const h2g = c.createGain();
+      h2g.gain.value = 0.12;
+      peaF.connect(h2.frequency);
+      const am = c.createGain();
+      am.gain.value = 0.75;
+      const peaA = c.createGain();
+      peaA.gain.value = 0.25;
+      pea.connect(peaA).connect(am.gain);
+      const env = c.createGain();
+      env.gain.setValueAtTime(0, t);
+      env.gain.linearRampToValueAtTime(0.16, t + 0.025);
+      env.gain.setValueAtTime(0.16, t + d - 0.06);
+      env.gain.linearRampToValueAtTime(0, t + d);
+      osc.connect(am);
+      h2.connect(h2g).connect(am);
+      am.connect(env);
+      // sopro de ar
+      const ar = this.fonteRuido();
+      const arF = c.createBiquadFilter();
+      arF.type = 'bandpass';
+      arF.frequency.value = f0;
+      arF.Q.value = 4;
+      const arG = c.createGain();
+      arG.gain.value = 0.35;
+      ar.connect(arF).connect(arG).connect(env);
+      this.saida(env, 0);
+      [osc, pea, h2, ar].forEach((o) => { o.start(t); o.stop(t + d + 0.05); });
     },
     alternar() {
       this.ligado = !this.ligado;
@@ -958,14 +1187,30 @@
   function sonsDoJogo(av) {
     const jg = av.meu || av.jogos[0];
     if (!jg) return;
+    if (!av.somIni) {
+      av.somIni = true;
+      // abriu um jogo que já tinha acabado: não toca nada de uma vez
+      if (av.fim) {
+        av.somVistos = jg.ev.length;
+        av.somFim = true;
+        return;
+      }
+      if ((jg.min || 0) <= 1 && !jg.fim) Som.apito('inicio');
+    }
     const vistos = av.somVistos || 0;
     const novos = jg.ev.slice(vistos);
     av.somVistos = jg.ev.length;
     for (const e of novos) {
       if (e.t === 'g') Som.golo(!av.lado || e.l === av.lado);
       else if (e.t === 'pos' || e.t === 'bar' || e.t === 'pf') Som.quase();
+      else if (e.t === 'int') Som.apito('intervalo');
     }
-    if (av.fim) Som.pararAmbiente();
+    if (av.fim && !av.somFim) {
+      av.somFim = true;
+      Som.apito('fim');
+      const a = Som.ambiente;
+      setTimeout(() => { if (Som.ambiente === a) Som.pararAmbiente(); }, 2500);
+    }
   }
   function renderAoVivo() {
     const av = S.aoVivo;

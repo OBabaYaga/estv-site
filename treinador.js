@@ -760,6 +760,159 @@
     if (jg.min <= 90) return jg.min + "'";
     return '90+' + (jg.min - 90) + "'";
   }
+  // ---------------------------------------------------------------
+  // SOM: adeptos no estádio e festejo dos golos (gerado no browser,
+  // volume baixo; liga/desliga no botão 🔊 dos jogos ao vivo)
+  // ---------------------------------------------------------------
+  const Som = {
+    ctx: null,
+    ligado: (function () {
+      try { return localStorage.getItem('estv_treinador_som') !== '0'; } catch (e) { return true; }
+    })(),
+    ambiente: null,
+    garantir() {
+      if (!this.ligado) return null;
+      try {
+        if (!this.ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          this.ctx = new AC();
+          this.mestre = this.ctx.createGain();
+          this.mestre.gain.value = 1;
+          this.mestre.connect(this.ctx.destination);
+          // ruído rosa (base de tudo)
+          const n = this.ctx.sampleRate * 3;
+          const buf = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
+          const d = buf.getChannelData(0);
+          let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+          for (let i = 0; i < n; i++) {
+            const w = Math.random() * 2 - 1;
+            b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759; b2 = 0.969 * b2 + w * 0.153852;
+            b3 = 0.8665 * b3 + w * 0.3104856; b4 = 0.55 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.016898;
+            d[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
+            b6 = w * 0.115926;
+          }
+          this.ruido = buf;
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        return this.ctx;
+      } catch (e) {
+        return null;
+      }
+    },
+    fonteRuido() {
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.ruido;
+      src.loop = true;
+      src.loopStart = Math.random();
+      return src;
+    },
+    // murmúrio contínuo dos adeptos, com ondas a subir e descer
+    iniciarAmbiente() {
+      if (this.ambiente) return;
+      const c = this.garantir();
+      if (!c) return;
+      const src = this.fonteRuido();
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 520;
+      bp.Q.value = 0.7;
+      const lp = c.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 1600;
+      const g = c.createGain();
+      g.gain.value = 0;
+      g.gain.linearRampToValueAtTime(0.4, c.currentTime + 2.5);
+      // ondas lentas no volume (cânticos ao longe)
+      const lfo = c.createOscillator();
+      lfo.frequency.value = 0.13;
+      const lfoG = c.createGain();
+      lfoG.gain.value = 0.11;
+      lfo.connect(lfoG).connect(g.gain);
+      src.connect(bp).connect(lp).connect(g).connect(this.mestre);
+      src.start();
+      lfo.start();
+      this.ambiente = { src, g, lfo };
+    },
+    pararAmbiente() {
+      const a = this.ambiente;
+      if (!a || !this.ctx) return;
+      this.ambiente = null;
+      const t = this.ctx.currentTime;
+      a.g.gain.cancelScheduledValues(t);
+      a.g.gain.setValueAtTime(a.g.gain.value, t);
+      a.g.gain.linearRampToValueAtTime(0, t + 1.5);
+      setTimeout(() => {
+        try { a.src.stop(); a.lfo.stop(); } catch (e) {}
+      }, 1700);
+    },
+    // festejo do golo (a nosso favor) ou lamento (contra)
+    golo(nosso) {
+      const c = this.garantir();
+      if (!c) return;
+      const t = c.currentTime;
+      const src = this.fonteRuido();
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.Q.value = 0.55;
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      if (nosso) {
+        bp.frequency.setValueAtTime(700, t);
+        bp.frequency.linearRampToValueAtTime(1100, t + 0.6);
+        bp.frequency.linearRampToValueAtTime(800, t + 4);
+        g.gain.exponentialRampToValueAtTime(0.9, t + 0.35);
+        g.gain.setValueAtTime(0.9, t + 1.4);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 4.8);
+      } else {
+        bp.frequency.setValueAtTime(420, t);
+        bp.frequency.linearRampToValueAtTime(300, t + 1.5);
+        g.gain.exponentialRampToValueAtTime(0.45, t + 0.25);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+      }
+      src.connect(bp).connect(g).connect(this.mestre);
+      src.start(t);
+      src.stop(t + 5);
+    },
+    // "uuuh" curto numa bola ao poste / grande defesa
+    quase() {
+      const c = this.garantir();
+      if (!c) return;
+      const t = c.currentTime;
+      const src = this.fonteRuido();
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.Q.value = 1.2;
+      bp.frequency.setValueAtTime(600, t);
+      bp.frequency.linearRampToValueAtTime(380, t + 1);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.38, t + 0.2);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.3);
+      src.connect(bp).connect(g).connect(this.mestre);
+      src.start(t);
+      src.stop(t + 1.5);
+    },
+    alternar() {
+      this.ligado = !this.ligado;
+      try { localStorage.setItem('estv_treinador_som', this.ligado ? '1' : '0'); } catch (e) {}
+      if (!this.ligado) this.pararAmbiente();
+      else if (S.aoVivo && !S.aoVivo.fim) this.iniciarAmbiente();
+    },
+  };
+  // segue os eventos do meu jogo e toca os sons certos
+  function sonsDoJogo(av) {
+    const jg = av.meu || av.jogos[0];
+    if (!jg) return;
+    const vistos = av.somVistos || 0;
+    const novos = jg.ev.slice(vistos);
+    av.somVistos = jg.ev.length;
+    for (const e of novos) {
+      if (e.t === 'g') Som.golo(!av.lado || e.l === av.lado);
+      else if (e.t === 'pos' || e.t === 'bar' || e.t === 'pf') Som.quase();
+    }
+    if (av.fim) Som.pararAmbiente();
+  }
   function renderAoVivo() {
     const av = S.aoVivo;
     app().innerHTML =
@@ -770,7 +923,9 @@
         ? '<button class="tr-btn2" data-acao="pausa" id="trPausa"></button>' + VELS.map((v, k) => '<button class="tr-vel' + (S.vel === k ? ' ativo' : '') + '" data-acao="vel" data-v="' + k + '">' + v.n + '</button>').join('') +
           '<label class="tr-check"><input type="checkbox" id="trPausaInt"' + (S.pausaIntervalo ? ' checked' : '') + '> Parar ao intervalo</label>'
         : '') +
+      '<button class="tr-vel tr-som" data-acao="som" title="Som dos adeptos" aria-label="Ligar ou desligar o som">' + (Som.ligado ? '🔊' : '🔇') + '</button>' +
       '</div></div><div id="trVivoCorpo"></div></div>';
+    if (!av.fim) Som.iniciarAmbiente();
     desenharAoVivo();
   }
   function desenharAoVivo() {
@@ -778,6 +933,7 @@
     const el = $('#trVivoCorpo');
     if (!el) return;
     const m = av.m;
+    sonsDoJogo(av);
     const pb = $('#trPausa');
     if (pb) pb.innerHTML = av.fim ? '' : av.pausa ? '<i class="fas fa-play"></i> Continuar' : '<i class="fas fa-pause"></i> Pausa';
     if (pb) pb.style.display = av.fim ? 'none' : '';
@@ -834,6 +990,7 @@
   }
   function concluirAoVivo() {
     const av = S.aoVivo;
+    Som.pararAmbiente();
     if (av.tipo !== 'carreira') {
       S.aoVivo = null;
       render();
@@ -1023,6 +1180,7 @@
     const modoBtn = ev.target.closest('.tr-modo');
     if (modoBtn) {
       if (S.aoVivo && S.aoVivo.tipo === 'carreira' && !S.aoVivo.fim) return toast('Acaba primeiro a jornada.', 'erro');
+      Som.pararAmbiente();
       S.aoVivo = null;
       S.modo = modoBtn.dataset.modo;
       S.esc = null;
@@ -1092,9 +1250,15 @@
         if (S.esc && S.esc.sujo && fonte !== Carreira) return toast('Guarda primeiro a escalação.', 'erro');
         iniciarJornada();
         return;
+      case 'som':
+        Som.alternar();
+        b.textContent = Som.ligado ? '🔊' : '🔇';
+        return;
       case 'pausa': {
         const av = S.aoVivo;
         av.pausa = !av.pausa;
+        if (av.pausa) Som.pararAmbiente();
+        else Som.iniciarAmbiente();
         av.painelSubs = false;
         S.subSai = null;
         desenharAoVivo();
@@ -1297,6 +1461,13 @@
     } else if (t.id === 'trPausaInt') {
       S.pausaIntervalo = t.checked;
       guardarPref();
+    }
+  });
+  document.addEventListener('pointerdown', () => {
+    if (Som.ctx && Som.ctx.state === 'suspended') Som.ctx.resume();
+    else if (!Som.ctx && Som.ligado && S.aoVivo && !S.aoVivo.fim) {
+      Som.ambiente = null;
+      Som.iniciarAmbiente();
     }
   });
   document.addEventListener('keydown', (e) => {

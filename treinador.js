@@ -56,9 +56,9 @@
     const u = t && t.getUser && t.getUser();
     return u ? u.displayName || u.login : 'Treinador';
   }
-  async function api(acao, dados, metodo) {
+  async function api(acao, dados, metodo, query) {
     const t = token();
-    const url = apiBase() + '&acao=' + encodeURIComponent(acao);
+    const url = apiBase() + '&acao=' + encodeURIComponent(acao) + Object.entries(query || {}).map(([k, v]) => '&' + k + '=' + encodeURIComponent(v)).join('');
     const opts = { method: metodo || (dados ? 'POST' : 'GET'), headers: {}, cache: 'no-store' };
     if (t) opts.headers.Authorization = 'Bearer ' + t;
     if (dados) {
@@ -180,18 +180,37 @@
   // ---------------------------------------------------------------
   // Fonte: Liga ESTV (o mundo vive no servidor)
   // ---------------------------------------------------------------
+  const LS_LIGA = 'estv_treinador_liga';
   const Liga = {
     tipo: 'liga',
+    id: (function () {
+      try { return localStorage.getItem(LS_LIGA) || 'estv'; } catch (e) { return 'estv'; }
+    })(),
     mundo: null,
     info: null,
+    // muda de liga (Liga ESTV ou uma liga privada)
+    mudar(id) {
+      id = id || 'estv';
+      if (id === this.id) return;
+      this.id = id;
+      this.mundo = null;
+      this.info = null;
+      S.esc = null;
+      S.vista = 'equipa';
+      try { localStorage.setItem(LS_LIGA, id); } catch (e) {}
+    },
+    nome() {
+      return this.info && this.info.nome ? this.info.nome : this.id === 'estv' ? 'Liga ESTV' : 'Liga';
+    },
     async carregar() {
-      const j = await api('liga');
+      const j = await api('liga', null, 'GET', { liga: this.id });
       this.aplicar(j);
       return j;
     },
     aplicar(j) {
-      if (j.mundo) this.mundo = TM.migrar(j.mundo);
-      this.info = j.info || this.info;
+      if (j.id && j.id !== this.id) return;
+      if ('mundo' in j && j.mundo !== undefined) this.mundo = j.mundo ? TM.migrar(j.mundo) : null;
+      if (j.info !== undefined) this.info = j.info;
       this.login = j.login || this.login;
     },
     meu() {
@@ -203,7 +222,7 @@
     },
     podeJogar: false,
     async acao(nome, ...args) {
-      const j = await api('liga-acao', { acao: nome, args });
+      const j = await api('liga-acao', { liga: this.id, acao: nome, args });
       this.aplicar(j);
       return j.r || { ok: true };
     },
@@ -321,6 +340,8 @@
   }
   function render() {
     $$('.tr-modo').forEach((b) => b.classList.toggle('ativo', b.dataset.modo === S.modo));
+    const barra = $('#trLigaBarra');
+    if (barra) barra.hidden = !(S.modo === 'liga' && !S.aoVivo && token() && meuLogin());
     if (S.aoVivo) return renderAoVivo();
     if (S.modo === 'carreira') return renderCarreira();
     if (S.modo === 'liga') return renderLiga();
@@ -1138,25 +1159,98 @@
     if (d <= 0) return 'a começar…';
     return (h ? h + 'h ' : '') + String(mi).padStart(2, '0') + 'm ' + String(s).padStart(2, '0') + 's';
   }
+  // ----- ligas privadas: barra de ligas, convites e gestão -----
+  async function carregarMinhas(forcar) {
+    if (S.minhas && !forcar) return S.minhas;
+    try {
+      const r = await api('minhas-ligas', null, 'GET');
+      S.minhas = r.ligas || [];
+    } catch (e) {
+      S.minhas = S.minhas || [];
+    }
+    return S.minhas;
+  }
+  function desenharBarra() {
+    const el = $('#trLigaBarra');
+    if (!el) return;
+    const ls = S.minhas || [];
+    const chip = (id, html) => '<button class="tr-liga-chip' + (Liga.id === id ? ' ativo' : '') + '" data-acao="ver-liga" data-id="' + esc(id) + '">' + html + '</button>';
+    let h = '<div class="tr-ligas-barra">' + chip('estv', '<i class="fas fa-tv"></i> Liga ESTV') +
+      ls.map((l) => chip(l.id, (l.souDono ? '<i class="fas fa-crown" title="És o dono"></i> ' : '<i class="fas fa-user-group"></i> ') + esc(l.nome) + ' <small>' + l.n + '</small>')).join('') +
+      (Liga.id !== 'estv' && !ls.find((l) => l.id === Liga.id) ? chip(Liga.id, '<i class="fas fa-envelope-open-text"></i> ' + esc(Liga.nome())) : '') +
+      '<button class="tr-liga-chip novo" data-acao="criar-liga"><i class="fas fa-plus"></i> Criar liga</button>' +
+      '<button class="tr-liga-chip novo" data-acao="codigo-liga"><i class="fas fa-key"></i> Tenho um código</button></div>';
+    const i = Liga.info;
+    if (Liga.id !== 'estv' && i && Liga.mundo) {
+      const souDono = i.dono === meuLogin();
+      const membro = !!Liga.meu();
+      h += '<div class="tr-liga-info"><div><b>' + esc(i.nome) + '</b><small>Criada por ' + esc(i.dono) + ' · código <code>' + esc(Liga.id.toUpperCase()) + '</code> · ' + Object.values(Liga.mundo.clubes).filter((c) => c.hum).length + ' treinador(es)</small></div><div class="tr-liga-btns">' +
+        '<button class="tr-btn" data-acao="convidar"><i class="fas fa-user-plus"></i> Convidar amigos</button>' +
+        (souDono ? '<button class="tr-btn2" data-acao="gerir-liga"><i class="fas fa-gear"></i> Gerir liga</button>' : membro ? '<button class="tr-btn2 perigo" data-acao="sair-liga"><i class="fas fa-right-from-bracket"></i> Sair</button>' : '') +
+        '</div></div>';
+    }
+    el.innerHTML = h;
+  }
+  function linkConvite(id) {
+    return location.origin + location.pathname + '?liga=' + id.toUpperCase() + '#liga';
+  }
+  function modalConvite() {
+    const link = linkConvite(Liga.id);
+    const txt = 'Junta-te à minha liga "' + Liga.nome() + '" no Treinador ESTV! ' + link;
+    modal('<h3><i class="fas fa-user-plus"></i> Convidar amigos</h3><p>Manda este link aos teus amigos. Quem entrar fica com um clube livre da divisão mais baixa, tal como tu.</p>' +
+      '<div class="tr-convite"><input id="trLinkConvite" readonly value="' + esc(link) + '"><button class="tr-btn" data-acao="copiar-convite"><i class="fas fa-copy"></i> Copiar</button></div>' +
+      '<p class="tr-nota">Ou diz-lhes o código <b class="tr-codigo">' + esc(Liga.id.toUpperCase()) + '</b> para porem em "Tenho um código".</p>' +
+      '<div class="tr-partilhar">' + (navigator.share ? '<button class="tr-btn2" data-acao="partilhar-convite"><i class="fas fa-share-nodes"></i> Partilhar</button>' : '') +
+      '<a class="tr-btn2" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(txt) + '"><i class="fab fa-whatsapp"></i> WhatsApp</a></div>');
+  }
+  function horasHtml(sel) {
+    return '<div class="tr-horas">' + Array.from({ length: 24 }, (_, h) => '<button type="button" class="tr-hora' + (sel.includes(h) ? ' ativo' : '') + '" data-acao="hora" data-h="' + h + '">' + String(h).padStart(2, '0') + 'h</button>').join('') + '</div>';
+  }
+  function horasEscolhidas() {
+    return $$('.tr-modal .tr-hora.ativo').map((b) => Number(b.dataset.h));
+  }
+  function modalCriarLiga() {
+    modal('<h3><i class="fas fa-trophy"></i> Criar a tua liga</h3><p>Crias uma liga só tua e convidas os amigos com um link. Cada um treina um clube e as jornadas jogam-se para todos às horas que escolheres.</p>' +
+      '<label class="tr-fld">Nome da liga<input id="trNomeLiga" maxlength="32" placeholder="Ex.: Liga dos Amigos"></label>' +
+      '<div class="tr-fld">Países<div class="tr-paises-esc">' + Object.entries(TM.PAISES).map(([k, P]) => '<label><input type="checkbox" class="tr-pais-liga" value="' + k + '"' + (k === 'PT' ? ' checked disabled' : '') + '> ' + P.band + ' ' + esc(P.nome) + '</label>').join('') + '</div><small>Portugal está sempre. Toda a gente começa na divisão mais baixa de Portugal.</small></div>' +
+      '<div class="tr-fld">Horas das jornadas (hora de Lisboa)' + horasHtml([21]) + '<small>Uma jornada por cada hora escolhida, todos os dias. Como dono, também podes jogar a próxima jornada quando quiseres.</small></div>' +
+      '<button class="tr-btn-jogar" data-acao="criar-liga-ok"><i class="fas fa-check"></i> Criar liga</button>', { largo: true });
+    setTimeout(() => { const i = $('#trNomeLiga'); if (i) i.focus(); }, 50);
+  }
+  function modalGerir() {
+    const i = Liga.info || {};
+    const m = Liga.mundo;
+    const humanos = Object.values(m.clubes).filter((c) => c.hum);
+    modal('<h3><i class="fas fa-gear"></i> Gerir "' + esc(i.nome) + '"</h3>' +
+      '<div class="tr-gerir-linha"><button class="tr-btn" data-acao="liga-op" data-op="jogar"><i class="fas fa-forward"></i> Jogar a próxima jornada agora</button>' +
+      (i.ativa ? '<button class="tr-btn2" data-acao="liga-op" data-op="pausa"><i class="fas fa-pause"></i> Pausar</button>' : '<button class="tr-btn2" data-acao="liga-op" data-op="retomar"><i class="fas fa-play"></i> Retomar</button>') + '</div>' +
+      '<div class="tr-fld">Horas das jornadas' + horasHtml(i.horas || []) + '<button class="tr-btn2" data-acao="liga-op" data-op="horas"><i class="fas fa-floppy-disk"></i> Guardar horas</button></div>' +
+      '<div class="tr-fld">Treinadores (' + humanos.length + ')<ul class="tr-membros">' + humanos.map((c) => '<li>' + emblema(c) + ' <b>' + esc(c.hum) + '</b> <span>' + esc(c.n) + ' · ' + esc(ndComPais(m, c.div)) + '</span>' + (c.hum !== i.dono ? '<button class="tr-link perigo" data-acao="liga-op" data-op="expulsar" data-alvo="' + esc(c.hum) + '">Expulsar</button>' : '<small>dono</small>') + '</li>').join('') + '</ul></div>' +
+      '<button class="tr-link perigo" data-acao="liga-op" data-op="apagar"><i class="fas fa-trash"></i> Apagar a liga</button>', { largo: true });
+  }
   async function renderLiga() {
     S.fonte = Liga;
     if (!token() || !meuLogin()) {
-      app().innerHTML = '<div class="tr-gate"><i class="fas fa-users"></i><h2>Liga ESTV</h2><p>Os espectadores do Edu treinam clubes na mesma liga de 4 divisões. As jornadas jogam-se a horas certas, para todos ao mesmo tempo.</p><button class="gate-login-btn" data-acao="login"><i class="fab fa-twitch"></i> Entrar com Twitch para jogar</button></div>';
+      app().innerHTML = '<div class="tr-gate"><i class="fas fa-users"></i><h2>Ligas</h2><p>Joga na Liga ESTV com os espectadores do Edu, ou cria a tua própria liga e convida os teus amigos. As jornadas jogam-se a horas certas, para todos ao mesmo tempo.</p><button class="gate-login-btn" data-acao="login"><i class="fab fa-twitch"></i> Entrar com Twitch para jogar</button></div>';
       return;
     }
-    if (!Liga.mundo) app().innerHTML = '<div class="tr-carregar">A carregar a Liga ESTV…</div>';
+    if (!Liga.mundo) app().innerHTML = '<div class="tr-carregar">A carregar a liga…</div>';
+    desenharBarra();
     const pedido = (S.ligaPedido = (S.ligaPedido || 0) + 1);
     try {
-      await Liga.carregar();
+      await Promise.all([Liga.carregar(), carregarMinhas()]);
       if (pedido !== S.ligaPedido || S.aoVivo) return;
     } catch (e) {
       if (pedido !== S.ligaPedido) return;
-      app().innerHTML = '<div class="tr-gate"><h2>Liga ESTV</h2><p>' + esc(e.message) + '</p><button class="tr-btn" data-acao="recarregar-liga">Tentar outra vez</button></div>';
+      app().innerHTML = '<div class="tr-gate"><h2>' + esc(Liga.nome()) + '</h2><p>' + esc(e.message) + '</p><button class="tr-btn" data-acao="recarregar-liga">Tentar outra vez</button>' + (Liga.id !== 'estv' ? ' <button class="tr-btn2" data-acao="ver-liga" data-id="estv">Ir para a Liga ESTV</button>' : '') + '</div>';
       return;
     }
     if (S.modo !== 'liga') return;
+    desenharBarra();
     if (!Liga.mundo) {
-      app().innerHTML = '<div class="tr-gate"><i class="fas fa-hourglass-half"></i><h2>Liga ESTV</h2><p>A liga ainda não começou. O Edu (ou o moderador) tem de a criar no Painel de Controlo.</p></div>';
+      app().innerHTML = Liga.id === 'estv'
+        ? '<div class="tr-gate"><i class="fas fa-hourglass-half"></i><h2>Liga ESTV</h2><p>A liga ainda não começou. O Edu (ou o moderador) tem de a criar no Painel de Controlo.</p><p>Entretanto podes <b>criar a tua própria liga</b> e convidar amigos.</p><button class="tr-btn" data-acao="criar-liga"><i class="fas fa-plus"></i> Criar liga</button></div>'
+        : '<div class="tr-gate"><i class="fas fa-circle-question"></i><h2>Liga não encontrada</h2><p>Não há nenhuma liga com o código <b>' + esc(Liga.id.toUpperCase()) + '</b>. Pode ter sido apagada pelo dono.</p><button class="tr-btn" data-acao="ver-liga" data-id="estv">Ir para a Liga ESTV</button></div>';
       return;
     }
     const c = Liga.meu();
@@ -1164,14 +1258,18 @@
       const t = Liga.treinador();
       if (t && (t.ofertas || []).length) return renderOfertas(Liga);
       const humanos = Object.values(Liga.mundo.clubes).filter((x) => x.hum).length;
-      app().innerHTML = '<div class="tr-gate"><i class="fas fa-users"></i><h2>Liga ESTV</h2><p>Há <b>' + humanos + '</b> treinador(es) na liga. Entra e ficas com um clube livre da divisão mais baixa que tiver vaga, como no Elifoot.</p><p class="tr-nota">' + esc((Liga.mundo.paises || ['PT']).map((p) => TM.PAISES[p].band + ' ' + TM.PAISES[p].nome).join(' · ')) + ' · começas na 4.ª divisão portuguesa · jornadas às ' + esc(((Liga.info && Liga.info.horas) || []).join(' e ')) + '</p><button class="tr-btn-jogar grande" data-acao="entrar-liga"><i class="fas fa-handshake"></i> Entrar na liga</button></div>';
+      const i = Liga.info || {};
+      const paises = esc((Liga.mundo.paises || ['PT']).map((p) => TM.PAISES[p].band + ' ' + TM.PAISES[p].nome).join(' · '));
+      app().innerHTML = Liga.id === 'estv'
+        ? '<div class="tr-gate"><i class="fas fa-users"></i><h2>Liga ESTV</h2><p>Há <b>' + humanos + '</b> treinador(es) na liga. Entra e ficas com um clube livre da divisão mais baixa que tiver vaga, como no Elifoot.</p><p class="tr-nota">' + paises + ' · começas na 4.ª divisão portuguesa · jornadas às ' + esc((i.horas || []).join(' e ')) + 'h</p><button class="tr-btn-jogar grande" data-acao="entrar-liga"><i class="fas fa-handshake"></i> Entrar na liga</button></div>'
+        : '<div class="tr-gate"><i class="fas fa-envelope-open-text"></i><h2>' + esc(i.nome) + '</h2><p>Foste convidado por <b>' + esc(i.dono) + '</b>. Já há <b>' + humanos + '</b> treinador(es). Entra e ficas com um clube livre da divisão mais baixa.</p><p class="tr-nota">' + paises + ' · jornadas às ' + esc((i.horas || []).join(' e ')) + 'h (Lisboa)</p><button class="tr-btn-jogar grande" data-acao="entrar-liga"><i class="fas fa-handshake"></i> Entrar na liga</button></div>';
       return;
     }
     renderPainel(Liga);
     // repetição ao vivo se a jornada acabou de ser jogada
     const i = Liga.info || {};
-    if (i.ultimaEm && Date.now() - i.ultimaEm < 100000 && Liga.mundo.ultimos && S.vistoReplay !== i.ultimaEm) {
-      S.vistoReplay = i.ultimaEm;
+    if (i.ultimaEm && Date.now() - i.ultimaEm < 100000 && Liga.mundo.ultimos && S.vistoReplay !== Liga.id + i.ultimaEm) {
+      S.vistoReplay = Liga.id + i.ultimaEm;
       iniciarReplay(Liga.mundo, i.ultimaEm);
     }
   }
@@ -1272,7 +1370,7 @@
     }
   }
   document.addEventListener('click', async (ev) => {
-    const raiz = ev.target.closest('#trApp, .tr-modal-fundo, #trModos');
+    const raiz = ev.target.closest('#trApp, .tr-modal-fundo, #trModos, #trLigaBarra');
     if (!raiz) return;
     const modoBtn = ev.target.closest('.tr-modo');
     if (modoBtn) {
@@ -1523,12 +1621,98 @@
       case 'filtro-pos': S.filtro.pos = b.dataset.p; renderVista(fonte); return;
       case 'ver-jogo': detalheJogo(fonte, b.dataset.h, b.dataset.a); return;
       case 'entrar-liga': {
-        const r = await correr(() => api('liga-entrar', {}));
+        const r = await correr(() => api('liga-entrar', { liga: Liga.id }));
         if (r) {
           Liga.aplicar(r);
-          toast('Bem-vindo à Liga ESTV!');
+          S.minhas = null;
+          toast('Bem-vindo à ' + Liga.nome() + '!');
           render();
         }
+        return;
+      }
+      case 'ver-liga':
+        Liga.mudar(id);
+        render();
+        return;
+      case 'criar-liga': modalCriarLiga(); return;
+      case 'hora': b.classList.toggle('ativo'); return;
+      case 'criar-liga-ok': {
+        const nome = ($('#trNomeLiga').value || '').trim();
+        if (nome.length < 3) { toast('Dá um nome à liga (pelo menos 3 letras).', 'erro'); return; }
+        const paises = $$('.tr-pais-liga:checked').map((x) => x.value);
+        const horas = horasEscolhidas();
+        if (!horas.length) { toast('Escolhe pelo menos uma hora para as jornadas.', 'erro'); return; }
+        b.disabled = true;
+        const r = await correr(() => api('liga-criar', { nome, paises, horas }));
+        b.disabled = false;
+        if (!r) return;
+        Liga.mudar(r.id);
+        Liga.aplicar(r);
+        S.minhas = null;
+        fecharModal();
+        toast('Liga criada! Agora convida os teus amigos.');
+        await render();
+        modalConvite();
+        return;
+      }
+      case 'codigo-liga':
+        modal('<h3><i class="fas fa-key"></i> Entrar numa liga</h3><p>Escreve o código de 6 letras que o teu amigo te mandou.</p><div class="tr-convite"><input id="trCodigo" maxlength="6" placeholder="Ex.: K7QX2M" autocomplete="off"><button class="tr-btn" data-acao="codigo-ok">Ver liga</button></div>');
+        setTimeout(() => { const i = $('#trCodigo'); if (i) i.focus(); }, 50);
+        return;
+      case 'codigo-ok': {
+        const cod = ($('#trCodigo').value || '').trim().toLowerCase();
+        if (!/^[a-z0-9]{6}$/.test(cod)) { toast('O código tem 6 letras ou números.', 'erro'); return; }
+        fecharModal();
+        Liga.mudar(cod);
+        render();
+        return;
+      }
+      case 'convidar': modalConvite(); return;
+      case 'copiar-convite': {
+        const inp = $('#trLinkConvite');
+        try { await navigator.clipboard.writeText(inp.value); } catch (e) { inp.select(); document.execCommand('copy'); }
+        toast('Link copiado!');
+        return;
+      }
+      case 'partilhar-convite':
+        try { await navigator.share({ title: Liga.nome(), text: 'Junta-te à minha liga no Treinador ESTV!', url: linkConvite(Liga.id) }); } catch (e) {}
+        return;
+      case 'gerir-liga': modalGerir(); return;
+      case 'sair-liga': {
+        if (!confirm('Sair da liga "' + Liga.nome() + '"? Perdes o teu clube nesta liga.')) return;
+        const r = await correr(() => api('liga-sair', { liga: Liga.id }));
+        if (r) {
+          S.minhas = null;
+          Liga.mudar('estv');
+          toast('Saíste da liga.');
+          render();
+        }
+        return;
+      }
+      case 'liga-op': {
+        const op = b.dataset.op;
+        if (op === 'apagar' && !confirm('Apagar a liga "' + Liga.nome() + '" para sempre? Todos os treinadores perdem os clubes.')) return;
+        if (op === 'expulsar' && !confirm('Expulsar ' + b.dataset.alvo + ' da liga?')) return;
+        const corpo = { liga: Liga.id, op };
+        if (op === 'horas') {
+          corpo.horas = horasEscolhidas();
+          if (!corpo.horas.length) { toast('Escolhe pelo menos uma hora.', 'erro'); return; }
+        }
+        if (op === 'expulsar') corpo.alvo = b.dataset.alvo;
+        b.disabled = true;
+        const r = await correr(() => api('liga-admin', corpo));
+        b.disabled = false;
+        if (!r) return;
+        fecharModal();
+        S.minhas = null;
+        if (op === 'apagar') {
+          Liga.mudar('estv');
+          toast('Liga apagada.');
+        } else {
+          Liga.aplicar(r);
+          toast({ jogar: 'Jornada jogada!', pausa: 'Liga em pausa.', retomar: 'Liga retomada.', horas: 'Horas guardadas.', expulsar: 'Treinador expulso.' }[op] || 'Feito.');
+        }
+        render();
         return;
       }
       case 'recarregar-liga': render(); return;
@@ -1607,6 +1791,13 @@
   function lerHash() {
     const h = (location.hash || '').replace('#', '');
     if (['carreira', 'liga', 'desafios', 'ranking'].includes(h)) S.modo = h;
+    // convite: treinador.html?liga=CODIGO
+    const conv = (new URLSearchParams(location.search).get('liga') || '').trim().toLowerCase();
+    if (/^[a-z0-9]{6}$/.test(conv) && !S.conviteLido) {
+      S.conviteLido = true;
+      S.modo = 'liga';
+      Liga.mudar(conv);
+    }
   }
   window.addEventListener('hashchange', () => {
     lerHash();

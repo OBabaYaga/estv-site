@@ -14,7 +14,7 @@
     <meta name="apple-mobile-web-app-title" content="ESTV">
     <link rel="icon" href="assets/logo-b.png">
     <link rel="stylesheet" href="style.css?v=7">
-    <link rel="stylesheet" href="treinador.css?v=3">
+    <link rel="stylesheet" href="treinador.css?v=4">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Unbounded:wght@600;700;800;900&display=swap" rel="stylesheet">
@@ -64,16 +64,17 @@
         <section class="tr-hero">
             <div class="container">
                 <h1 class="tr-hero-titulo"><i class="fas fa-clipboard-list"></i> Treinador ESTV</h1>
-                <p class="tr-hero-sub">Pega num clube da 4.ª divisão, monta a equipa, compra no mercado e leva-o até ao título. Sozinho, na Liga ESTV com os outros espectadores, ou em desafios diretos.</p>
+                <p class="tr-hero-sub">Pega num clube da 4.ª divisão, monta a equipa, compra no mercado e leva-o até ao título. Sozinho, na Liga ESTV com os outros espectadores, numa liga tua com os amigos, ou em desafios diretos.</p>
                 <nav class="tr-modos" id="trModos">
                     <button class="tr-modo ativo" data-modo="carreira"><i class="fas fa-user"></i> Carreira</button>
-                    <button class="tr-modo" data-modo="liga"><i class="fas fa-users"></i> Liga ESTV</button>
+                    <button class="tr-modo" data-modo="liga"><i class="fas fa-users"></i> Ligas</button>
                     <button class="tr-modo" data-modo="desafios"><i class="fas fa-bolt"></i> Desafios</button>
                     <button class="tr-modo" data-modo="ranking"><i class="fas fa-ranking-star"></i> Ranking</button>
                 </nav>
             </div>
         </section>
         <section class="tr-area">
+            <div class="container" id="trLigaBarra" hidden></div>
             <div class="container" id="trApp"><div class="tr-carregar">A carregar…</div></div>
         </section>
     </main>
@@ -105,6 +106,6 @@
     <script src="twitch-auth.js?v=4"></script>
     <script src="notificacoes.js?v=1"></script>
     <script src="treinador-motor.js?v=3"></script>
-    <script src="treinador.js?v=8"></script>
+    <script src="treinador.js?v=9"></script>
 </body>
 </html>

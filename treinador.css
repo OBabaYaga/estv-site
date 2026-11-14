@@ -291,3 +291,33 @@ body.tr-com-modal { overflow: hidden; }
 .tr-band { grid-row: span 2; font-size: 2rem; width: 3rem; text-align: center; }
 
 .tr-recomecar { display: block; margin: 0.6rem auto 0; font-size: 0.8rem; }
+
+/* ----- ligas privadas ----- */
+#trLigaBarra[hidden] { display: none; }
+.tr-ligas-barra { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.9rem; }
+.tr-liga-chip { display: inline-flex; align-items: center; gap: 0.45rem; background: var(--tr-card, #15151c); border: 1px solid rgba(255,255,255,0.1); color: var(--tr-txt, #fff); font: inherit; font-size: 0.86rem; font-weight: 600; border-radius: 999px; padding: 0.5rem 0.95rem; cursor: pointer; }
+.tr-liga-chip small { background: rgba(255,255,255,0.1); border-radius: 999px; padding: 0 0.45rem; font-size: 0.72rem; }
+.tr-liga-chip.ativo { background: #4f5de4; border-color: #6d79ff; }
+.tr-liga-chip.novo { border-style: dashed; color: var(--tr-txt2, #b8b8c8); }
+.tr-liga-chip .fa-crown { color: #f5c542; }
+.tr-liga-info { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; background: linear-gradient(135deg, rgba(79,93,228,0.16), rgba(145,70,255,0.1)); border: 1px solid rgba(109,121,255,0.35); border-radius: 14px; padding: 0.8rem 1rem; margin-bottom: 1rem; }
+.tr-liga-info small { display: block; color: var(--tr-txt2, #b8b8c8); margin-top: 0.15rem; }
+.tr-liga-info code, .tr-codigo { font-family: ui-monospace, monospace; letter-spacing: 1px; color: #f5c542; }
+.tr-liga-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.tr-convite { display: flex; gap: 0.5rem; margin: 0.8rem 0; }
+.tr-convite input { flex: 1; min-width: 0; background: #0d0d12; border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 10px; padding: 0.6rem 0.75rem; font: inherit; text-transform: none; }
+#trCodigo { text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+.tr-partilhar { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.tr-partilhar a { text-decoration: none; }
+.tr-fld { display: block; margin: 0.9rem 0; font-weight: 600; font-size: 0.88rem; }
+.tr-fld > input { display: block; width: 100%; margin-top: 0.4rem; background: #0d0d12; border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 10px; padding: 0.6rem 0.75rem; font: inherit; box-sizing: border-box; }
+.tr-fld small { display: block; font-weight: 400; color: var(--tr-txt2, #b8b8c8); margin-top: 0.35rem; }
+.tr-paises-esc { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin-top: 0.45rem; font-weight: 500; }
+.tr-horas { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.3rem; margin: 0.45rem 0; }
+.tr-hora { background: #0d0d12; border: 1px solid rgba(255,255,255,0.12); color: var(--tr-txt2, #b8b8c8); border-radius: 8px; padding: 0.35rem 0; font: inherit; font-size: 0.78rem; cursor: pointer; }
+.tr-hora.ativo { background: #4f5de4; border-color: #6d79ff; color: #fff; font-weight: 700; }
+.tr-gerir-linha { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0; }
+.tr-membros { list-style: none; padding: 0; margin: 0.45rem 0; display: grid; gap: 0.35rem; font-weight: 400; }
+.tr-membros li { display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 0.4rem 0.6rem; }
+.tr-membros li > span:not(.tr-emb) { color: var(--tr-txt2, #b8b8c8); font-size: 0.8rem; flex: 1; }
+@media (max-width: 600px) { .tr-horas { grid-template-columns: repeat(6, 1fr); } }

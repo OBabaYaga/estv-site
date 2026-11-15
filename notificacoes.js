@@ -146,6 +146,94 @@
     }
   }
 
+  // ---------------------------------------------------------------
+  // "Descarregar app": explicação com instruções e botões
+  // (também abre com o link www.estv.pt/#app)
+  // ---------------------------------------------------------------
+  const ehAndroid = /Android/i.test(navigator.userAgent);
+  const noIOSSemSafari = ehIOS && /CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent);
+  const navInterno = /Instagram|FBAN|FBAV|TikTok|musical_ly|Snapchat|Twitter|Line\//i.test(navigator.userAgent);
+  const LINK_APP = 'https://www.estv.pt/';
+
+  function mostrarDownload() {
+    const velho = document.getElementById('appDownload');
+    if (velho) velho.remove();
+    const plat = ehIOS ? 'ios' : ehAndroid ? 'android' : 'pc';
+    const bloco = (id, icone, titulo, passos) => `
+      <div class="app-dl-plat${plat === id ? ' atual' : ''}">
+        <div class="app-dl-plat-tit"><i class="${icone}"></i> ${titulo}${plat === id ? ' <span>o teu</span>' : ''}</div>
+        <ol>${passos.map((x) => '<li>' + x + '</li>').join('')}</ol>
+      </div>`;
+    const android = bloco('android', 'fab fa-android', 'Android', [
+      'Abre <strong>www.estv.pt</strong> no <strong>Chrome</strong>',
+      'Toca em <strong>Instalar agora</strong> (se aparecer aqui em cima) ou no menu <strong>⋮</strong> → <strong>Instalar app</strong>',
+      'A app ESTV fica no ecrã principal, ao lado das outras',
+    ]);
+    const ios = bloco('ios', 'fab fa-apple', 'iPhone / iPad', [
+      'Abre <strong>www.estv.pt</strong> no <strong>Safari</strong>',
+      'Toca em <strong>Partilhar</strong> <i class="fas fa-arrow-up-from-bracket"></i> na barra de baixo',
+      'Escolhe <strong>"Adicionar ao ecrã principal"</strong> e depois <strong>Adicionar</strong>',
+    ]);
+    const pc = bloco('pc', 'fas fa-desktop', 'Computador', [
+      'Abre <strong>www.estv.pt</strong> no <strong>Chrome</strong> ou no <strong>Edge</strong>',
+      'Clica no ícone de instalar <i class="fas fa-download"></i> no lado direito da barra de endereço',
+      'Confirma em <strong>Instalar</strong>',
+    ]);
+    const ordem = plat === 'ios' ? [ios, android, pc] : plat === 'android' ? [android, ios, pc] : [pc, android, ios];
+    let aviso = '';
+    if (instalada) aviso = '<p class="app-dl-aviso ok"><i class="fas fa-circle-check"></i> Já estás a usar a app ESTV. 🎉</p>';
+    else if (navInterno) aviso = '<p class="app-dl-aviso"><i class="fas fa-triangle-exclamation"></i> Estás dentro de outra app (Instagram, TikTok…). Copia o link e abre-o no <strong>' + (ehIOS ? 'Safari' : 'Chrome') + '</strong> para instalar.</p>';
+    else if (noIOSSemSafari) aviso = '<p class="app-dl-aviso"><i class="fas fa-triangle-exclamation"></i> No iPhone só dá para instalar pelo <strong>Safari</strong>. Copia o link e abre-o lá.</p>';
+    const m = document.createElement('div');
+    m.id = 'appDownload';
+    m.className = 'push-modal app-dl';
+    m.innerHTML = `
+      <div class="push-modal-box">
+        <button class="push-modal-fechar" aria-label="Fechar"><i class="fas fa-xmark"></i></button>
+        <img src="assets/app/icon-192.png" alt="" class="push-modal-icon">
+        <h3>Descarregar a app ESTV</h3>
+        <p>É grátis e não precisa de loja: instala-se direto do site, fica no ecrã principal e avisa-te quando o Edu entra em direto.</p>
+        ${aviso}
+        <div class="app-dl-botoes">
+          ${pedidoInstalacao && !instalada ? '<button class="push-btn app-dl-grande" data-app="instalar"><i class="fas fa-download"></i> Instalar agora</button>' : ''}
+          ${ehIOS && !instalada && !noIOSSemSafari && !navInterno ? '<button class="push-btn app-dl-grande" data-app="ios"><i class="fab fa-apple"></i> Como instalar no iPhone</button>' : ''}
+          <button class="push-btn push-btn-sec" data-app="copiar"><i class="fas fa-link"></i> Copiar link</button>
+          ${navigator.share ? '<button class="push-btn push-btn-sec" data-app="partilhar"><i class="fas fa-share-nodes"></i> Partilhar</button>' : ''}
+        </div>
+        ${ordem.join('')}
+      </div>`;
+    m.addEventListener('click', async (e) => {
+      if (e.target === m || e.target.closest('.push-modal-fechar')) return m.remove();
+      const b = e.target.closest('[data-app]');
+      if (!b) return;
+      const a = b.dataset.app;
+      if (a === 'instalar') {
+        m.remove();
+        instalar();
+      } else if (a === 'ios') {
+        const atual = m.querySelector('.app-dl-plat.atual');
+        if (atual) {
+          atual.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          atual.classList.remove('pisca');
+          void atual.offsetWidth;
+          atual.classList.add('pisca');
+        }
+      } else if (a === 'copiar') {
+        try {
+          await navigator.clipboard.writeText(LINK_APP);
+        } catch (err) {
+          prompt('Copia este link:', LINK_APP);
+        }
+        b.innerHTML = '<i class="fas fa-check"></i> Link copiado';
+      } else if (a === 'partilhar') {
+        try {
+          await navigator.share({ title: 'App ESTV', text: 'Instala a app do ESTV: lives de futebol do Edu, apostas, cartas e resultados.', url: LINK_APP });
+        } catch (err) {}
+      }
+    });
+    document.body.appendChild(m);
+  }
+
   async function instalar() {
     if (pedidoInstalacao) {
       pedidoInstalacao.prompt();
@@ -174,6 +262,16 @@
     btn.className = 'nav-link push-menu-btn';
     const divisor = nav.querySelector('.sidebar-divider');
     nav.insertBefore(btn, divisor || null);
+    const app = document.createElement('button');
+    app.type = 'button';
+    app.id = 'appMenuBtn';
+    app.className = 'nav-link push-menu-btn app-menu-btn';
+    app.innerHTML = '<i class="fas fa-mobile-screen-button"></i> Download da app';
+    nav.insertBefore(app, btn.nextSibling);
+    app.addEventListener('click', () => {
+      if (typeof closeSidebar === 'function') closeSidebar();
+      mostrarDownload();
+    });
     btn.addEventListener('click', async () => {
       const e = await estado();
       if (e === 'ativo') {
@@ -192,7 +290,7 @@
       if (existente) existente.remove();
       return;
     }
-    const podeInstalar = !instalada && (pedidoInstalacao || ehIOS);
+    const podeInstalar = !instalada;
     const cartao = existente || document.createElement('div');
     cartao.id = 'pushCartao';
     cartao.className = 'push-cartao';
@@ -212,7 +310,7 @@
     const a = cartao.querySelector('.push-btn-ativar');
     if (a) a.onclick = ativar;
     const i = cartao.querySelector('.push-btn-instalar');
-    if (i) i.onclick = instalar;
+    if (i) i.onclick = () => (pedidoInstalacao ? instalar() : mostrarDownload());
   }
 
   async function atualizarUI() {
@@ -325,6 +423,7 @@
     }
     await atualizarUI();
     sincronizar();
+    if (location.hash === '#app') mostrarDownload();
     // O painel de admin só sabe se és admin depois do login carregar.
     setTimeout(() => renderAdmin(), 1500);
     setTimeout(() => renderAdmin(), 4000);

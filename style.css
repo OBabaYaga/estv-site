@@ -4788,3 +4788,19 @@ h1, h2, h3,
 .st-eu input { margin-top: 0.2rem; accent-color: var(--blue-light); }
 .st-kpi-tit { font-family: var(--font-body); }
 .st-topo .st-atualizar { width: auto; flex: 0 0 auto; margin: 0; padding: 0.55rem 1.1rem; }
+
+/* ----- App ESTV: descarregar ----- */
+.app-menu-btn i { color: #22c55e; }
+.app-dl { align-items: center; overflow-y: auto; }
+.app-dl .push-modal-box { max-height: calc(100vh - 2rem); overflow-y: auto; }
+.app-dl-botoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0 0.4rem; }
+.app-dl-grande { width: 100%; justify-content: center; padding: 0.8rem 1rem; font-size: 0.95rem; background: linear-gradient(135deg, #22c55e, #15803d); }
+.app-dl-plat { margin-top: 0.8rem; padding: 0.8rem 0.9rem; border-radius: 0.9rem; border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.03); }
+.app-dl-plat.atual { border-color: rgba(34, 197, 94, 0.55); background: rgba(34, 197, 94, 0.07); }
+.app-dl-plat.pisca { animation: appDlPisca 1.2s ease; }
+@keyframes appDlPisca { 30% { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.45); } }
+.app-dl-plat-tit { color: #fff; font-weight: 800; display: flex; align-items: center; gap: 0.45rem; }
+.app-dl-plat-tit span { margin-left: auto; font-size: 0.7rem; font-weight: 700; color: #22c55e; text-transform: uppercase; letter-spacing: 0.05em; }
+.app-dl-plat ol { margin: 0.5rem 0 0 1.1rem; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.86rem; }
+.app-dl-aviso { margin-top: 0.75rem; padding: 0.6rem 0.75rem; border-radius: 0.7rem; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); color: #fde68a; font-size: 0.85rem; }
+.app-dl-aviso.ok { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.4); color: #bbf7d0; }
